@@ -1,0 +1,4 @@
+Policy,service_level_pct_mean,service_level_pct_ci_low,service_level_pct_ci_high,stockout_rate_pct_mean,stockout_rate_pct_ci_low,stockout_rate_pct_ci_high,avg_inventory_units_mean,avg_inventory_units_ci_low,avg_inventory_units_ci_high,holding_cost_usd_mean,holding_cost_usd_ci_low,holding_cost_usd_ci_high,stockout_penalty_usd_mean,stockout_penalty_usd_ci_low,stockout_penalty_usd_ci_high,total_cost_usd_mean,total_cost_usd_ci_low,total_cost_usd_ci_high
+manager_heuristic,95.61,95.57,95.66,7.79,7.71,7.88,22.9,22.86,22.95,70.76,70.58,70.93,2460.41,2415.73,2505.1,2531.17,2486.48,2575.86
+point_forecast,95.02,95.0,95.05,8.77,8.71,8.84,18.68,18.63,18.72,57.74,57.65,57.84,2770.79,2746.12,2795.46,2828.54,2803.84,2853.23
+quantile_ordering,96.11,96.07,96.15,6.63,6.58,6.69,23.5,23.45,23.55,73.35,73.19,73.51,2111.38,2073.05,2149.72,2184.73,2146.41,2223.05

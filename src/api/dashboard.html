@@ -1,0 +1,1879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Restok &mdash; Autonomous Retail Replenishment Engine</title>
+  
+  <!-- Typography: IBM Plex Sans & IBM Plex Mono for technical & quantitative fidelity -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root {
+      /* Obsidian Slate Base Palette */
+      --bg-base: #080C14;
+      --bg-surface: #0E1422;
+      --bg-surface-elevated: #141C30;
+      --bg-surface-hover: #1A253E;
+      --bg-card: #0F1728;
+      
+      /* Crisp Borders */
+      --border-subtle: rgba(255, 255, 255, 0.07);
+      --border-medium: rgba(255, 255, 255, 0.12);
+      --border-focus: #3B82F6;
+
+      /* Typography */
+      --text-main: #F8FAFC;
+      --text-muted: #94A3B8;
+      --text-subtle: #64748B;
+      --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+
+      /* Functional Accent Palette */
+      --accent-blue: #3B82F6;
+      --accent-blue-hover: #2563EB;
+      --accent-blue-subtle: rgba(59, 130, 246, 0.12);
+      --accent-emerald: #10B981;
+      --accent-emerald-subtle: rgba(16, 185, 129, 0.12);
+      --accent-amber: #F59E0B;
+      --accent-amber-subtle: rgba(245, 158, 11, 0.12);
+      --accent-rose: #EF4444;
+      --accent-rose-subtle: rgba(239, 68, 68, 0.12);
+      --accent-indigo: #8B5CF6;
+      --accent-indigo-subtle: rgba(139, 92, 246, 0.12);
+
+      /* Geometry */
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+
+      /* Neutral Depth Shadows */
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Reset & Base */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      font-size: 0.875rem;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Themed Browser Surfaces */
+    ::selection {
+      background: var(--accent-blue-subtle);
+      color: #FFF;
+    }
+    * {
+      caret-color: var(--accent-blue);
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-base);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-sm);
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+    :focus-visible {
+      outline: 2px solid var(--accent-blue);
+      outline-offset: 1px;
+    }
+
+    /* Tabular Numerals */
+    .tnum, td, .metric-value, .stat-pill {
+      font-feature-settings: 'tnum' 1, 'zero' 1;
+    }
+
+    /* Top Executive Navigation Bar */
+    header {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-mark {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-medium);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-blue);
+    }
+    .brand-mark svg {
+      width: 18px;
+      height: 18px;
+      stroke-width: 2;
+    }
+    .brand-titles {
+      display: flex;
+      flex-direction: column;
+    }
+    .brand-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: #FFF;
+    }
+    .brand-subtitle {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      letter-spacing: 0.02em;
+    }
+
+    /* Navigation Tabs */
+    .nav-tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--bg-base);
+      padding: 4px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-subtle);
+    }
+    .nav-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 500;
+      transition: color 0.15s, background-color 0.15s;
+      user-select: none;
+    }
+    .nav-tab svg {
+      width: 15px;
+      height: 15px;
+      stroke-width: 1.75;
+    }
+    .nav-tab:hover {
+      color: #FFF;
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .nav-tab.active {
+      color: #FFF;
+      background: var(--bg-surface-elevated);
+      font-weight: 600;
+      border: 1px solid var(--border-subtle);
+    }
+
+    /* Live Telemetry Beacon */
+    .telemetry-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      background: var(--bg-base);
+      padding: 5px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-subtle);
+    }
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent-emerald);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      padding: 1.5rem;
+      max-width: 1440px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Section Header Block */
+    .section-header {
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+    .section-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #FFF;
+      line-height: 1.3;
+    }
+    .section-desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+      max-width: 75ch;
+    }
+
+    /* Executive Command Deck / Metric Grid */
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 1.5rem;
+    }
+    .metric-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .metric-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    .metric-top svg {
+      width: 16px;
+      height: 16px;
+      stroke-width: 1.75;
+      color: var(--text-subtle);
+    }
+    .metric-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #FFF;
+      margin: 0.4rem 0 0.2rem 0;
+      font-family: var(--font-mono);
+      letter-spacing: -0.02em;
+    }
+    .metric-sub {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .delta-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+    }
+    .delta-positive {
+      color: var(--accent-emerald);
+      background: var(--accent-emerald-subtle);
+    }
+    .delta-alert {
+      color: var(--accent-amber);
+      background: var(--accent-amber-subtle);
+    }
+
+    /* Action Deck Strip */
+    .action-strip {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1.25rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .action-strip-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .action-strip-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* Standard Interactive Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      font-family: inherit;
+      transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+    }
+    .btn svg {
+      width: 14px;
+      height: 14px;
+      stroke-width: 2;
+    }
+    .btn-primary {
+      background: var(--accent-blue);
+      color: #FFF;
+    }
+    .btn-primary:hover {
+      background: var(--accent-blue-hover);
+    }
+    .btn-secondary {
+      background: var(--bg-surface-elevated);
+      color: var(--text-main);
+      border-color: var(--border-medium);
+    }
+    .btn-secondary:hover {
+      background: var(--bg-surface-hover);
+      color: #FFF;
+    }
+
+    /* High-Density Data Tables */
+    .table-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      overflow-x: auto;
+      margin-bottom: 1.5rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.8rem;
+    }
+    th {
+      background: var(--bg-surface);
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 9px 14px;
+      border-bottom: 1px solid var(--border-subtle);
+      white-space: nowrap;
+    }
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text-main);
+      white-space: nowrap;
+    }
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+    tbody tr:hover {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Urgency Badges */
+    .urgency-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 7px;
+      border-radius: var(--radius-sm);
+      font-size: 0.7rem;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+    }
+    .urgency-critical {
+      background: var(--accent-rose-subtle);
+      color: var(--accent-rose);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+    }
+    .urgency-high {
+      background: var(--accent-amber-subtle);
+      color: var(--accent-amber);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+    }
+    .urgency-normal {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-muted);
+      border: 1px solid var(--border-subtle);
+    }
+
+    /* Workbench Controls & Selectors */
+    .controls-ribbon {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1.25rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 1rem;
+    }
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .control-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-subtle);
+      font-weight: 600;
+    }
+    select, input[type="text"] {
+      background: var(--bg-base);
+      border: 1px solid var(--border-medium);
+      color: #FFF;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 0.8rem;
+      font-family: inherit;
+      outline: none;
+    }
+    select:focus, input[type="text"]:focus {
+      border-color: var(--border-focus);
+    }
+
+    /* Series Diagnostic HUD */
+    .series-hud {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    .hud-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .hud-label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-subtle);
+      font-weight: 600;
+    }
+    .hud-val {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #FFF;
+      font-family: var(--font-mono);
+    }
+
+    /* Chart Canvas Container */
+    .chart-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+    .chart-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    .chart-legend-custom {
+      display: flex;
+      gap: 12px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .legend-indicator {
+      width: 10px;
+      height: 3px;
+      border-radius: 1px;
+    }
+
+    /* PO Inline Editable Input */
+    .po-qty-input {
+      background: var(--bg-base);
+      border: 1px solid var(--border-medium);
+      color: #FFF;
+      padding: 3px 6px;
+      border-radius: var(--radius-sm);
+      font-size: 0.8rem;
+      font-family: var(--font-mono);
+      width: 70px;
+      text-align: right;
+    }
+    .po-qty-input:focus {
+      border-color: var(--border-focus);
+    }
+
+    /* Copilot AI Interface */
+    .copilot-shell {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      display: flex;
+      flex-direction: column;
+      height: 720px;
+      overflow: hidden;
+    }
+    .copilot-topbar {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 0.85rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .copilot-id {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .copilot-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-sm);
+      background: var(--accent-indigo-subtle);
+      color: var(--accent-indigo);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(139, 92, 246, 0.25);
+    }
+    .copilot-icon svg {
+      width: 16px;
+      height: 16px;
+      stroke-width: 2;
+    }
+    .copilot-title {
+      font-weight: 700;
+      color: #FFF;
+      font-size: 0.9rem;
+    }
+    .copilot-status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      background: var(--bg-base);
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .chat-stream {
+      flex: 1;
+      padding: 1.5rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      background: rgba(8, 12, 20, 0.6);
+    }
+    .chat-bubble {
+      max-width: 80%;
+      padding: 0.85rem 1.15rem;
+      border-radius: var(--radius-md);
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+    .chat-bubble.user {
+      align-self: flex-end;
+      background: var(--accent-blue);
+      color: #FFF;
+      border-bottom-right-radius: 2px;
+      box-shadow: var(--shadow-sm);
+    }
+    .chat-bubble.bot {
+      align-self: flex-start;
+      background: var(--bg-surface-elevated);
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+      border-bottom-left-radius: 2px;
+      box-shadow: var(--shadow-sm);
+    }
+    .chat-bubble.bot h3 {
+      font-size: 0.95rem;
+      margin: 0.3rem 0;
+      color: #FFF;
+      font-weight: 600;
+    }
+    .chat-bubble.bot ul {
+      margin: 0.4rem 0 0.4rem 1.25rem;
+      padding: 0;
+    }
+    .chat-bubble.bot li {
+      margin-bottom: 0.25rem;
+    }
+    .chat-bubble.bot strong {
+      color: #FFF;
+    }
+
+    .prompt-suggestions-row {
+      display: flex;
+      gap: 8px;
+      padding: 0.65rem 1.25rem;
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-subtle);
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+    .suggestion-chip {
+      background: var(--bg-base);
+      color: var(--text-muted);
+      border: 1px solid var(--border-subtle);
+      padding: 5px 11px;
+      border-radius: var(--radius-sm);
+      font-size: 0.72rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s;
+    }
+    .suggestion-chip svg {
+      width: 12px;
+      height: 12px;
+      stroke-width: 2;
+    }
+    .suggestion-chip:hover {
+      background: var(--bg-surface-elevated);
+      color: #FFF;
+      border-color: var(--border-medium);
+    }
+
+    .chat-composer {
+      padding: 0.85rem 1.25rem;
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .composer-input {
+      flex: 1;
+      background: var(--bg-base);
+      color: #FFF;
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      outline: none;
+      font-family: inherit;
+    }
+    .composer-input:focus {
+      border-color: var(--border-focus);
+    }
+
+    /* Typing Dots Indicator */
+    .typing-dots {
+      display: inline-flex;
+      gap: 5px;
+      align-items: center;
+      padding: 6px 10px;
+    }
+    .typing-dots span {
+      width: 6px;
+      height: 6px;
+      background: var(--text-muted);
+      border-radius: 50%;
+      animation: blinkDots 1.4s infinite both;
+    }
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes blinkDots {
+      0%, 80%, 100% { opacity: 0.25; transform: scale(0.85); }
+      40% { opacity: 1; transform: scale(1.1); background: var(--accent-blue); }
+    }
+
+    /* Floating Copilot Shortcut Button */
+    .floating-launcher {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 100;
+      background: var(--bg-surface-elevated);
+      color: #FFF;
+      border: 1px solid var(--border-medium);
+      padding: 9px 16px;
+      border-radius: var(--radius-md);
+      font-weight: 600;
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: var(--shadow-lg);
+      cursor: pointer;
+      transition: background-color 0.15s, border-color 0.15s;
+    }
+    .floating-launcher svg {
+      width: 15px;
+      height: 15px;
+      color: var(--accent-indigo);
+      stroke-width: 2;
+    }
+    .floating-launcher:hover {
+      background: var(--bg-surface-hover);
+      border-color: var(--accent-indigo);
+    }
+
+    @media (max-width: 1024px) {
+      .metric-grid { grid-template-columns: repeat(2, 1fr); }
+      .series-hud { grid-template-columns: repeat(4, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .metric-grid { grid-template-columns: 1fr; }
+      .series-hud { grid-template-columns: repeat(2, 1fr); }
+      header { flex-direction: column; gap: 10px; align-items: flex-start; }
+      .nav-tabs { overflow-x: auto; width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Executive Navigation Bar -->
+  <header>
+    <div class="brand-section">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+        </svg>
+      </div>
+      <div class="brand-titles">
+        <div class="brand-title">RESTOK</div>
+        <div class="brand-subtitle">Autonomous Replenishment Engine</div>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs" aria-label="Main Navigation">
+      <div class="nav-tab active" onclick="switchTab('overview')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <rect x="3" y="3" width="7" height="9" rx="1"/>
+          <rect x="14" y="3" width="7" height="5" rx="1"/>
+          <rect x="14" y="12" width="7" height="9" rx="1"/>
+          <rect x="3" y="16" width="7" height="5" rx="1"/>
+        </svg>
+        Overview
+      </div>
+      <div class="nav-tab" onclick="switchTab('forecasts')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+          <polyline points="16 7 22 7 22 13"/>
+        </svg>
+        14d Forecasts
+      </div>
+      <div class="nav-tab" onclick="switchTab('policies')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M16 16l3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1zM2 16l3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1zM7 21h10M12 3v18"/>
+        </svg>
+        Policy Frontier
+      </div>
+      <div class="nav-tab" onclick="switchTab('censoring')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        Censoring Study
+      </div>
+      <div class="nav-tab" onclick="switchTab('po')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <path d="M16 10a4 4 0 0 1-8 0"/>
+        </svg>
+        Purchase Orders
+      </div>
+      <div class="nav-tab" onclick="switchTab('copilot')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--accent-indigo);">
+          <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3Z"/>
+        </svg>
+        AI Copilot
+      </div>
+    </nav>
+
+    <!-- System Telemetry Status -->
+    <div class="telemetry-chip">
+      <div class="status-dot"></div>
+      <span>300 SERIES &bull; 14D HORIZON</span>
+    </div>
+  </header>
+
+  <!-- Main Viewport -->
+  <main>
+
+    <!-- ========================================== -->
+    <!-- TAB 1: EXECUTIVE OVERVIEW                   -->
+    <!-- ========================================== -->
+    <section id="tab-overview" class="tab-content active">
+      <div class="section-header">
+        <div>
+          <h1 class="section-title">Autonomous Replenishment Command Deck</h1>
+          <p class="section-desc">Multi-echelon demand forecasting and automated purchase order dispatch across 5 Walmart stores and 60 FOODS SKUs.</p>
+        </div>
+      </div>
+
+      <!-- Metric Grid -->
+      <div class="metric-grid">
+        <div class="metric-card">
+          <div class="metric-top">
+            <span>LIGHTGBM TWEEDIE WAPE</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+              <polyline points="17 6 23 6 23 12"/>
+            </svg>
+          </div>
+          <div class="metric-value tnum" id="kpi-wape">34.91%</div>
+          <div class="metric-sub">
+            <span class="delta-badge delta-positive">&plusmn; 8.37%</span>
+            <span>vs 38.10% 7-day rolling mean</span>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-top">
+            <span>STOCKOUT REDUCTION</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+          </div>
+          <div class="metric-value tnum" id="kpi-stockout">-14.89%</div>
+          <div class="metric-sub">
+            <span class="delta-badge delta-positive">6.63% rate</span>
+            <span>down from 7.79% heuristic</span>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-top">
+            <span>TOTAL COST SAVINGS</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+            </svg>
+          </div>
+          <div class="metric-value tnum" id="kpi-cost-savings">13.69%</div>
+          <div class="metric-sub">
+            <span class="delta-badge delta-positive">$2,184.73</span>
+            <span>vs $2,531.17 heuristic</span>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-top">
+            <span>LATENT DEMAND RECOVERY</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+          </div>
+          <div class="metric-value tnum">-18.08%</div>
+          <div class="metric-sub">
+            <span class="delta-badge delta-positive">EM Imputation</span>
+            <span>corrects -20.06% naive bias</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Action Strip -->
+      <div class="action-strip">
+        <div class="action-strip-info">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:16px; height:16px; color:var(--accent-amber);">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span>Recommended replenishment orders generated based on Newsvendor Critical Ratio quantile ROPs.</span>
+        </div>
+        <div class="action-strip-buttons">
+          <button class="btn btn-secondary" onclick="switchTab('po')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
+            Review Purchase Orders
+          </button>
+          <button class="btn btn-primary" onclick="switchTab('copilot')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3Z"/></svg>
+            Launch AI Copilot
+          </button>
+        </div>
+      </div>
+
+      <!-- Policy Simulation Benchmark Matrix -->
+      <div class="table-container">
+        <table id="policy-summary-table">
+          <thead>
+            <tr>
+              <th>Replenishment Policy</th>
+              <th>Fill Rate (%)</th>
+              <th>Stockout Rate (%)</th>
+              <th>Average Inventory</th>
+              <th>Holding Cost</th>
+              <th>Stockout Penalty</th>
+              <th>Total Cost ($ USD)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Loaded via JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: DEMAND FORECASTING WORKBENCH         -->
+    <!-- ========================================== -->
+    <section id="tab-forecasts" class="tab-content">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">14-Day Demand Forecasting & Uncertainty Envelopes</h2>
+          <p class="section-desc">Multi-quantile LightGBM Tweedie regressors evaluated against out-of-time test horizon.</p>
+        </div>
+      </div>
+
+      <!-- Selection Ribbon -->
+      <div class="controls-ribbon">
+        <div class="control-group">
+          <span class="control-label">Store</span>
+          <select id="select-store" onchange="onStoreChange()"></select>
+        </div>
+        <div class="control-group">
+          <span class="control-label">SKU Item</span>
+          <select id="select-item" onchange="loadForecastSeries()"></select>
+        </div>
+        <div class="control-group">
+          <span class="control-label">Horizon</span>
+          <span style="font-family:var(--font-mono); font-size:0.8rem; color:var(--text-muted); background:var(--bg-base); padding:5px 10px; border-radius:var(--radius-sm); border:1px solid var(--border-subtle);">
+            14 Days Direct
+          </span>
+        </div>
+      </div>
+
+      <!-- Series Diagnostic HUD -->
+      <div class="series-hud" id="series-metadata-hud">
+        <div class="hud-cell">
+          <span class="hud-label">Department</span>
+          <span class="hud-val" id="hud-dept">--</span>
+        </div>
+        <div class="hud-cell">
+          <span class="hud-label">On-Hand Stock</span>
+          <span class="hud-val" id="hud-onhand">--</span>
+        </div>
+        <div class="hud-cell">
+          <span class="hud-label">Reorder Point (ROP)</span>
+          <span class="hud-val" id="hud-rop">--</span>
+        </div>
+        <div class="hud-cell">
+          <span class="hud-label">Lead Time</span>
+          <span class="hud-val" id="hud-leadtime">--</span>
+        </div>
+        <div class="hud-cell">
+          <span class="hud-label">Shelf Life</span>
+          <span class="hud-val" id="hud-shelflife">--</span>
+        </div>
+        <div class="hud-cell">
+          <span class="hud-label">Case Pack</span>
+          <span class="hud-val" id="hud-casepack">--</span>
+        </div>
+        <div class="hud-cell">
+          <span class="hud-label">Critical Ratio (&tau;)</span>
+          <span class="hud-val" id="hud-cr">--</span>
+        </div>
+      </div>
+
+      <!-- Forecast Chart -->
+      <div class="chart-container">
+        <div class="chart-header">
+          <span style="font-weight:600; font-size:0.85rem; color:#FFF;">Demand Trajectory & Quantile Prediction Cone</span>
+          <div class="chart-legend-custom">
+            <div class="legend-item"><div class="legend-indicator" style="background:#94A3B8;"></div> History</div>
+            <div class="legend-item"><div class="legend-indicator" style="background:#3B82F6;"></div> Point (Tweedie)</div>
+            <div class="legend-item"><div class="legend-indicator" style="background:#10B981;"></div> Median (q50)</div>
+            <div class="legend-item"><div class="legend-indicator" style="background:#F59E0B;"></div> High (q85)</div>
+            <div class="legend-item"><div class="legend-indicator" style="background:#8B5CF6;"></div> Upper Bound (q95)</div>
+          </div>
+        </div>
+        <canvas id="chart-forecast" height="95"></canvas>
+      </div>
+
+      <!-- Daily Trajectory Table -->
+      <div class="table-container">
+        <table id="forecast-daily-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Day of Week</th>
+              <th>Promotion Event</th>
+              <th>Point Forecast</th>
+              <th>Median (q50)</th>
+              <th>High (q85)</th>
+              <th>Upper Bound (q95)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Injected via JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 3: POLICY TRADEOFF FRONTIER             -->
+    <!-- ========================================== -->
+    <section id="tab-policies" class="tab-content">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Replenishment Policy Cost & Service Level Frontier</h2>
+          <p class="section-desc">Empirical Pareto frontier evaluated over 20 stochastic simulation seeds across 300 series.</p>
+        </div>
+      </div>
+
+      <div class="chart-container">
+        <div class="chart-header">
+          <span style="font-weight:600; font-size:0.85rem; color:#FFF;">Holding Cost vs Stockout Cost Tradeoff Curve</span>
+        </div>
+        <canvas id="chart-tradeoff" height="95"></canvas>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Policy Model</th>
+              <th>Reorder Logic</th>
+              <th>Stockout Rate (%)</th>
+              <th>Fill Rate (%)</th>
+              <th>Capital Utilization</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Manager Heuristic</strong></td>
+              <td>Fixed Days of Supply (7d rolling mean &times; lead time)</td>
+              <td class="tnum">7.79%</td>
+              <td class="tnum">95.61%</td>
+              <td>Baseline capital commitment</td>
+            </tr>
+            <tr>
+              <td><strong>Point Forecast Policy</strong></td>
+              <td>Expected Tweedie point forecast &times; lead time</td>
+              <td class="tnum">8.77%</td>
+              <td class="tnum">95.02%</td>
+              <td><span style="color:var(--accent-emerald); font-weight:600;">-18.43% Average Inventory</span></td>
+            </tr>
+            <tr>
+              <td><strong>Quantile Ordering Policy</strong></td>
+              <td>Calibrated Critical Ratio &tau; Newsvendor Reorder Point</td>
+              <td class="tnum"><strong style="color:var(--accent-emerald);">6.63% (-14.89%)</strong></td>
+              <td class="tnum"><strong style="color:var(--accent-emerald);">96.11%</strong></td>
+              <td><strong style="color:var(--accent-emerald);">-13.69% Net Total Cost</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 4: CENSORING STUDY                      -->
+    <!-- ========================================== -->
+    <section id="tab-censoring" class="tab-content">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Phase 7: Historical Demand Censoring Analysis</h2>
+          <p class="section-desc">Comparing naive sales models against ground truth latent customer demand when stockouts censor sales volume.</p>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table id="censoring-table">
+          <thead>
+            <tr>
+              <th>Methodology</th>
+              <th>WAPE vs True Demand</th>
+              <th>RMSE</th>
+              <th>MAE</th>
+              <th>Forecast Bias (%)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Loaded via JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 5: PURCHASE ORDERS COMMAND CENTER       -->
+    <!-- ========================================== -->
+    <section id="tab-po" class="tab-content">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Replenishment Purchase Orders (PO) Command Center</h2>
+          <p class="section-desc">Automated order generation, case pack rounding, and vendor dispatch authorization.</p>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-secondary" onclick="approveAllCritical()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg>
+            Approve All Critical
+          </button>
+          <button class="btn btn-secondary" onclick="exportPOCSV()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export Orders CSV
+          </button>
+        </div>
+      </div>
+
+      <!-- PO Filters -->
+      <div class="controls-ribbon">
+        <div class="control-group">
+          <span class="control-label">Search Series</span>
+          <input type="text" id="po-search" placeholder="Filter by SKU or Store..." oninput="filterPOTable()" style="width:190px;" />
+        </div>
+        <div class="control-group">
+          <span class="control-label">Urgency</span>
+          <select id="po-filter-urgency" onchange="filterPOTable()">
+            <option value="ALL">All Urgencies</option>
+            <option value="Critical">Critical</option>
+            <option value="High">High</option>
+            <option value="Normal">Normal</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <span class="control-label">Status</span>
+          <select id="po-filter-status" onchange="filterPOTable()">
+            <option value="ALL">All Statuses</option>
+            <option value="Pending">Pending</option>
+            <option value="Approved">Approved</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Purchase Orders Table -->
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>PO Identifier</th>
+              <th>Store</th>
+              <th>Item SKU</th>
+              <th>Dept</th>
+              <th>On-Hand</th>
+              <th>ROP</th>
+              <th>Order Qty</th>
+              <th>Case Pack</th>
+              <th>Lead Time</th>
+              <th>Unit Cost</th>
+              <th>Line Cost</th>
+              <th>Urgency</th>
+              <th>Status</th>
+              <th>Dispatch</th>
+            </tr>
+          </thead>
+          <tbody id="po-table-body">
+            <!-- Loaded via JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 6: AI REPLENISHMENT COPILOT (GEMINI)    -->
+    <!-- ========================================== -->
+    <section id="tab-copilot" class="tab-content">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Restok AI Supply Chain Copilot</h2>
+          <p class="section-desc">Grounded analytical intelligence powered by Google Gemini API (`gemini-2.5-flash`) with native tool calling.</p>
+        </div>
+      </div>
+
+      <div class="copilot-shell">
+        <div class="copilot-topbar">
+          <div class="copilot-id">
+            <div class="copilot-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3Z"/>
+              </svg>
+            </div>
+            <div>
+              <div class="copilot-title">Restok Domain Copilot</div>
+              <div style="font-size:0.7rem; color:var(--text-muted);">Grounded on 300 M5 Series, LightGBM Models & Replenishment Policies</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div class="copilot-status-indicator" id="copilot-status-badge">
+              <div class="status-dot" id="copilot-status-dot"></div>
+              <span id="copilot-model-label">Gemini 2.5 Flash / Local Engine</span>
+            </div>
+            <button class="btn btn-secondary" onclick="promptApiKey()" style="padding:4px 9px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m21 2-2 2m-7.6 7.6a5.5 5.5 0 1 1-7.8 7.8 5.5 5.5 0 0 1 7.8-7.8zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+              Set Key
+            </button>
+          </div>
+        </div>
+
+        <div class="chat-stream" id="chat-messages-container">
+          <div class="chat-bubble bot">
+            <h3>Restok AI Copilot Ready</h3>
+            <p>I have analytical access to your Walmart M5 data engine across <strong>300 Store &times; SKU series</strong>, <strong>14-day quantile demand forecasts</strong>, <strong>censoring bias adjustments</strong>, and <strong>purchase orders</strong>.</p>
+            <p style="margin-top:0.4rem; color:var(--text-muted);">Select a quick prompt below or ask any replenishment question.</p>
+          </div>
+        </div>
+
+        <!-- Quick Suggestions -->
+        <div class="prompt-suggestions-row">
+          <div class="suggestion-chip" onclick="sendPresetPrompt('Which SKUs are at critical stockout risk right now?')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Critical Stockouts
+          </div>
+          <div class="suggestion-chip" onclick="sendPresetPrompt('Explain the downward bias found in the Censoring Study')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Censoring Bias
+          </div>
+          <div class="suggestion-chip" onclick="sendPresetPrompt('What is our forecast and ROP for FOODS_1_012 in CA_1?')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/></svg>
+            SKU Profile (CA_1, FOODS_1_012)
+          </div>
+          <div class="suggestion-chip" onclick="sendPresetPrompt('Compare Quantile Ordering vs Manager Heuristic costs')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M16 16l3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1zM2 16l3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1zM7 21h10M12 3v18"/></svg>
+            Policy Benchmark
+          </div>
+          <div class="suggestion-chip" onclick="sendPresetPrompt('Why is LightGBM Tweedie outperforming the 7-day baseline?')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>
+            WAPE Breakdown
+          </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="chat-composer">
+          <input type="text" id="chat-user-input" class="composer-input"
+                 placeholder="Ask about inventory, forecasts, policy trade-offs, or PO rationale..."
+                 onkeydown="if(event.key==='Enter') sendChatMessage()" />
+          <button class="btn btn-primary" onclick="sendChatMessage()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            Send
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Floating Quick Launcher Button -->
+    <div class="floating-launcher" onclick="switchTab('copilot')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3Z"/>
+      </svg>
+      <span>AI Copilot</span>
+    </div>
+
+  </main>
+
+  <script>
+    let forecastChartInst = null;
+    let tradeoffChartInst = null;
+    let purchaseOrdersData = [];
+    let chatConversationHistory = [];
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      
+      const tabOrder = ['overview', 'forecasts', 'policies', 'censoring', 'po', 'copilot'];
+      const idx = tabOrder.indexOf(tabId);
+      if (idx >= 0) {
+        document.querySelectorAll('.nav-tab')[idx].classList.add('active');
+        document.getElementById('tab-' + tabId).classList.add('active');
+      }
+
+      if (tabId === 'forecasts' && !forecastChartInst) loadForecastSeries();
+      if (tabId === 'policies' && !tradeoffChartInst) loadTradeoffCurve();
+    }
+
+    async function initApp() {
+      // 1. Fetch KPIs
+      try {
+        const kpiRes = await fetch('/api/kpis');
+        const kpis = await kpiRes.json();
+        document.getElementById('kpi-wape').innerText = `${kpis.model_wape}%`;
+        document.getElementById('kpi-stockout').innerText = `-${kpis.stockout_reduction_pct}%`;
+        document.getElementById('kpi-cost-savings').innerText = `${kpis.cost_savings_pct}%`;
+      } catch (e) { console.error('Error fetching KPIs', e); }
+
+      // 2. Fetch Policies Summary
+      try {
+        const polRes = await fetch('/api/policies');
+        const polData = await polRes.json();
+        const tbody = document.querySelector('#policy-summary-table tbody');
+        tbody.innerHTML = polData.map(p => `
+          <tr>
+            <td><strong>${p.Policy.replace('_', ' ').toUpperCase()}</strong></td>
+            <td class="tnum">${p.service_level_pct_mean}% <span style="color:var(--text-subtle);font-size:0.75rem;">(&plusmn;${(p.service_level_pct_ci_high - p.service_level_pct_mean).toFixed(2)})</span></td>
+            <td class="tnum">${p.stockout_rate_pct_mean}% <span style="color:var(--text-subtle);font-size:0.75rem;">(&plusmn;${(p.stockout_rate_pct_ci_high - p.stockout_rate_pct_mean).toFixed(2)})</span></td>
+            <td class="tnum">${p.avg_inventory_units_mean} units</td>
+            <td class="tnum">$${p.holding_cost_usd_mean}</td>
+            <td class="tnum">$${p.stockout_penalty_usd_mean}</td>
+            <td class="tnum"><strong>$${p.total_cost_usd_mean}</strong></td>
+          </tr>
+        `).join('');
+      } catch (e) { console.error('Error loading policies', e); }
+
+      // 3. Fetch Censoring Study
+      try {
+        const cRes = await fetch('/api/censoring');
+        const cData = await cRes.json();
+        const tbody = document.querySelector('#censoring-table tbody');
+        tbody.innerHTML = cData.map(c => `
+          <tr>
+            <td><strong>${c.Method}</strong></td>
+            <td class="tnum">${(c.WAPE_vs_True_Demand * 100).toFixed(2)}%</td>
+            <td class="tnum">${c.RMSE_vs_True_Demand.toFixed(2)}</td>
+            <td class="tnum">${c.MAE_vs_True_Demand.toFixed(2)}</td>
+            <td class="tnum" style="color:${c.Forecast_Bias < -0.19 ? 'var(--accent-rose)' : 'var(--accent-emerald)'}; font-weight:600;">
+              ${(c.Forecast_Bias * 100).toFixed(2)}%
+            </td>
+          </tr>
+        `).join('');
+      } catch (e) { console.error('Error loading censoring study', e); }
+
+      // 4. Populate Stores & Items dropdowns
+      try {
+        const storeRes = await fetch('/api/stores');
+        const stores = await storeRes.json();
+        const storeSelect = document.getElementById('select-store');
+        storeSelect.innerHTML = stores.map(s => `<option value="${s}">${s}</option>`).join('');
+        await onStoreChange();
+      } catch (e) { console.error('Error loading stores', e); }
+
+      // 5. Load Purchase Orders
+      loadPurchaseOrders();
+
+      // 6. Init Copilot Key UI
+      updateKeyUI(!!localStorage.getItem('restok_gemini_api_key'));
+    }
+
+    async function onStoreChange() {
+      const storeId = document.getElementById('select-store').value;
+      const itemRes = await fetch(`/api/items?store_id=${storeId}`);
+      const items = await itemRes.json();
+      const itemSelect = document.getElementById('select-item');
+      itemSelect.innerHTML = items.map(i => `<option value="${i.item_id}">${i.item_id} (${i.dept_id})</option>`).join('');
+      loadForecastSeries();
+    }
+
+    async function loadForecastSeries() {
+      const storeId = document.getElementById('select-store').value;
+      const itemId = document.getElementById('select-item').value;
+      if (!storeId || !itemId) return;
+
+      const res = await fetch(`/api/forecasts?store_id=${storeId}&item_id=${itemId}`);
+      const data = await res.json();
+
+      // Fill HUD
+      const meta = data.meta;
+      document.getElementById('hud-dept').innerText = meta.dept_id;
+      document.getElementById('hud-onhand').innerText = `${meta.on_hand} units`;
+      document.getElementById('hud-rop').innerText = `${meta.rop} units`;
+      document.getElementById('hud-leadtime').innerText = `${meta.lead_time_days} days`;
+      document.getElementById('hud-shelflife').innerText = `${meta.shelf_life_days} days`;
+      document.getElementById('hud-casepack').innerText = `${meta.case_pack} units`;
+      document.getElementById('hud-cr').innerText = `${meta.critical_ratio}`;
+
+      // Update Chart
+      const historyLabels = data.history.map(d => d.date.substring(5));
+      const forecastLabels = data.forecast.map(d => d.date.substring(5));
+      const allLabels = [...historyLabels, ...forecastLabels];
+
+      const historyUnits = data.history.map(d => d.units_sold);
+      const pointPreds = Array(historyLabels.length).fill(null).concat(data.forecast.map(d => d.pred_point));
+      const q50 = Array(historyLabels.length).fill(null).concat(data.forecast.map(d => d.pred_q_50));
+      const q85 = Array(historyLabels.length).fill(null).concat(data.forecast.map(d => d.pred_q_85));
+      const q95 = Array(historyLabels.length).fill(null).concat(data.forecast.map(d => d.pred_q_95));
+
+      const ctx = document.getElementById('chart-forecast').getContext('2d');
+      if (forecastChartInst) forecastChartInst.destroy();
+
+      forecastChartInst = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: allLabels,
+          datasets: [
+            {
+              label: 'Historical Sales',
+              data: historyUnits,
+              borderColor: '#94A3B8',
+              backgroundColor: 'rgba(148, 163, 184, 0.1)',
+              borderWidth: 2,
+              tension: 0.1,
+              pointRadius: 2,
+              fill: false
+            },
+            {
+              label: 'LightGBM Tweedie (Point)',
+              data: pointPreds,
+              borderColor: '#3B82F6',
+              borderWidth: 2.5,
+              tension: 0.2,
+              pointRadius: 3,
+              fill: false
+            },
+            {
+              label: 'Median (q50)',
+              data: q50,
+              borderColor: '#10B981',
+              borderWidth: 1.5,
+              borderDash: [4, 4],
+              tension: 0.2,
+              pointRadius: 0,
+              fill: false
+            },
+            {
+              label: 'High (q85)',
+              data: q85,
+              borderColor: '#F59E0B',
+              borderWidth: 1.5,
+              borderDash: [3, 3],
+              tension: 0.2,
+              pointRadius: 0,
+              fill: false
+            },
+            {
+              label: 'Upper Bound (q95)',
+              data: q95,
+              borderColor: '#8B5CF6',
+              backgroundColor: 'rgba(139, 92, 246, 0.08)',
+              borderWidth: 1.5,
+              borderDash: [2, 2],
+              tension: 0.2,
+              pointRadius: 0,
+              fill: '-1'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          interaction: { intersect: false, mode: 'index' },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#0E1422',
+              borderColor: 'rgba(255, 255, 255, 0.12)',
+              borderWidth: 1,
+              titleColor: '#F8FAFC',
+              bodyColor: '#94A3B8',
+              padding: 10
+            }
+          },
+          scales: {
+            x: { grid: { color: 'rgba(255, 255, 255, 0.04)' }, ticks: { color: '#64748B', font: { family: 'IBM Plex Mono', size: 10 } } },
+            y: { grid: { color: 'rgba(255, 255, 255, 0.04)' }, ticks: { color: '#64748B', font: { family: 'IBM Plex Mono', size: 10 } } }
+          }
+        }
+      });
+
+      // Fill Forecast Breakdown Table
+      const dailyTbody = document.querySelector('#forecast-daily-table tbody');
+      dailyTbody.innerHTML = data.forecast.map(d => {
+        const dateObj = new Date(d.date);
+        const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+        return `
+          <tr>
+            <td class="tnum">${d.date}</td>
+            <td>${dayName}</td>
+            <td>${d.is_promotion ? '<span class="urgency-badge urgency-high">Promotion Active</span>' : '<span style="color:var(--text-subtle);">None</span>'}</td>
+            <td class="tnum"><strong>${d.pred_point.toFixed(1)}</strong></td>
+            <td class="tnum">${d.pred_q_50.toFixed(1)}</td>
+            <td class="tnum">${d.pred_q_85.toFixed(1)}</td>
+            <td class="tnum">${d.pred_q_95.toFixed(1)}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function loadTradeoffCurve() {
+      const res = await fetch('/api/tradeoff');
+      const data = await res.json();
+
+      const scatterData = data.map(d => ({
+        x: d.service_level_pct_mean,
+        y: d.total_cost_usd_mean,
+        policy: d.policy_name
+      }));
+
+      const ctx = document.getElementById('chart-tradeoff').getContext('2d');
+      if (tradeoffChartInst) tradeoffChartInst.destroy();
+
+      tradeoffChartInst = new Chart(ctx, {
+        type: 'scatter',
+        data: {
+          datasets: [{
+            label: 'Policy Simulation Outcome',
+            data: scatterData,
+            backgroundColor: data.map(d => d.policy_name === 'quantile_ordering' ? '#10B981' : (d.policy_name === 'point_forecast' ? '#3B82F6' : '#94A3B8')),
+            pointRadius: 6,
+            pointHoverRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#0E1422',
+              borderColor: 'rgba(255, 255, 255, 0.12)',
+              borderWidth: 1,
+              callbacks: {
+                label: function(ctx) {
+                  const p = ctx.raw;
+                  return `${p.policy}: Service Level ${p.x.toFixed(2)}%, Cost $${p.y.toFixed(2)}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: { title: { display: true, text: 'Achieved Service Level (%)', color: '#94A3B8' }, grid: { color: 'rgba(255, 255, 255, 0.04)' }, ticks: { color: '#64748B', font: { family: 'IBM Plex Mono' } } },
+            y: { title: { display: true, text: 'Total Supply Chain Cost ($ USD)', color: '#94A3B8' }, grid: { color: 'rgba(255, 255, 255, 0.04)' }, ticks: { color: '#64748B', font: { family: 'IBM Plex Mono' } } }
+          }
+        }
+      });
+    }
+
+    async function loadPurchaseOrders() {
+      const res = await fetch('/api/purchase-orders');
+      purchaseOrdersData = await res.json();
+      renderPOTable();
+    }
+
+    function filterPOTable() {
+      renderPOTable();
+    }
+
+    function renderPOTable() {
+      const searchVal = (document.getElementById('po-search')?.value || '').toLowerCase().trim();
+      const urgencyVal = document.getElementById('po-filter-urgency')?.value || 'ALL';
+      const statusVal = document.getElementById('po-filter-status')?.value || 'ALL';
+
+      let filtered = purchaseOrdersData;
+
+      if (searchVal) {
+        filtered = filtered.filter(p => 
+          p.item_id.toLowerCase().includes(searchVal) ||
+          p.store_id.toLowerCase().includes(searchVal) ||
+          p.dept_id.toLowerCase().includes(searchVal) ||
+          p.po_id.toLowerCase().includes(searchVal)
+        );
+      }
+
+      if (urgencyVal !== 'ALL') {
+        filtered = filtered.filter(p => p.urgency.toLowerCase() === urgencyVal.toLowerCase());
+      }
+
+      if (statusVal !== 'ALL') {
+        filtered = filtered.filter(p => p.status.toLowerCase() === statusVal.toLowerCase());
+      }
+
+      const tbody = document.getElementById('po-table-body');
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="14" style="text-align:center; padding:2rem; color:var(--text-subtle);">No replenishment purchase orders matching the specified filter criteria.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.slice(0, 60).map(po => `
+        <tr>
+          <td><code style="font-family:var(--font-mono); font-size:0.75rem;">${po.po_id}</code></td>
+          <td>${po.store_id}</td>
+          <td><strong>${po.item_id}</strong></td>
+          <td>${po.dept_id}</td>
+          <td class="tnum">${po.on_hand}</td>
+          <td class="tnum">${po.rop}</td>
+          <td>
+            <input type="number" class="po-qty-input tnum" value="${po.order_qty}" 
+                   onchange="updatePOQty('${po.po_id}', this.value)" />
+          </td>
+          <td class="tnum">${po.case_pack}</td>
+          <td class="tnum">${po.lead_time_days}d</td>
+          <td class="tnum">$${po.unit_cost.toFixed(2)}</td>
+          <td class="tnum"><strong>$${po.total_cost.toFixed(2)}</strong></td>
+          <td><span class="urgency-badge urgency-${po.urgency.toLowerCase()}">${po.urgency}</span></td>
+          <td>
+            <span style="color:${po.status === 'Approved' ? 'var(--accent-emerald)' : 'var(--text-muted)'}; font-weight:600;">
+              ${po.status}
+            </span>
+          </td>
+          <td>
+            <button class="btn btn-secondary" onclick="setPOStatus('${po.po_id}', 'Approved')" style="padding:4px 8px; font-size:0.72rem;">
+              Approve
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function updatePOQty(poId, newQty) {
+      const qty = parseInt(newQty);
+      if (isNaN(qty) || qty < 0) return;
+      await fetch(`/api/purchase-orders/${poId}/update`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order_qty: qty })
+      });
+      const item = purchaseOrdersData.find(p => p.po_id === poId);
+      if (item) {
+        item.order_qty = qty;
+        item.total_cost = parseFloat((qty * item.unit_cost).toFixed(2));
+      }
+      renderPOTable();
+    }
+
+    async function setPOStatus(poId, newStatus) {
+      await fetch(`/api/purchase-orders/${poId}/update`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      const item = purchaseOrdersData.find(p => p.po_id === poId);
+      if (item) item.status = newStatus;
+      renderPOTable();
+    }
+
+    async function approveAllCritical() {
+      for (const po of purchaseOrdersData) {
+        if (po.urgency === 'Critical') {
+          po.status = 'Approved';
+          fetch(`/api/purchase-orders/${po.po_id}/update`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'Approved' })
+          });
+        }
+      }
+      renderPOTable();
+    }
+
+    function exportPOCSV() {
+      const headers = ['PO ID', 'Store', 'Item', 'Dept', 'On Hand', 'ROP', 'Order Qty', 'Case Pack', 'Lead Time', 'Unit Cost', 'Total Cost', 'Urgency', 'Status'];
+      const rows = purchaseOrdersData.map(p => [
+        p.po_id, p.store_id, p.item_id, p.dept_id, p.on_hand, p.rop, p.order_qty, p.case_pack, p.lead_time_days, p.unit_cost, p.total_cost, p.urgency, p.status
+      ]);
+      const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', 'restok_replenishment_orders.csv');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    /* Copilot AI Chatbot Client */
+    function formatMarkdown(text) {
+      if (!text) return '';
+      let html = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+      // Headings
+      html = html.replace(/^### (.*$)/gim, '<h3 style="font-size:0.95rem; color:#FFF; margin:0.4rem 0;">$1</h3>');
+      html = html.replace(/^## (.*$)/gim, '<h3 style="font-size:1rem; color:#FFF; margin:0.5rem 0;">$1</h3>');
+      html = html.replace(/^# (.*$)/gim, '<h2 style="font-size:1.1rem; color:#FFF; margin:0.6rem 0;">$1</h2>');
+
+      // Blockquote - Refined without thick side-border
+      html = html.replace(/^\&gt; (.*$)/gim, '<div style="background:rgba(255,255,255,0.04); padding:6px 10px; margin:8px 0; border-radius:var(--radius-sm); color:var(--text-muted); font-size:0.8rem;">$1</div>');
+
+      // Bold & Italic
+      html = html.replace(/\*\*(.*?)\*\*/g, '<strong style="color:#FFF;">$1</strong>');
+      html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+      // Inline code
+      html = html.replace(/`([^`]+)`/g, '<code style="background:rgba(255,255,255,0.08); padding:2px 5px; border-radius:3px; font-family:var(--font-mono); font-size:0.82em; color:#93C5FD;">$1</code>');
+
+      // Unordered lists
+      const rawLines = html.split('\n');
+      let inList = false;
+      let formattedLines = [];
+      for (let line of rawLines) {
+        if (line.trim().startsWith('- ')) {
+          if (!inList) {
+            formattedLines.push('<ul style="margin:0.4rem 0 0.4rem 1.25rem; padding:0;">');
+            inList = true;
+          }
+          formattedLines.push(`<li style="margin-bottom:0.25rem;">${line.trim().substring(2)}</li>`);
+        } else {
+          if (inList) {
+            formattedLines.push('</ul>');
+            inList = false;
+          }
+          formattedLines.push(line);
+        }
+      }
+      if (inList) formattedLines.push('</ul>');
+
+      html = formattedLines.join('\n');
+      html = html.replace(/\n\n+/g, '<p style="margin:0.4rem 0 0 0;"></p>');
+      html = html.replace(/\n/g, '<br>');
+      return html;
+    }
+
+    async function sendChatMessage() {
+      const inputEl = document.getElementById('chat-user-input');
+      const userText = inputEl.value.trim();
+      if (!userText) return;
+
+      inputEl.value = '';
+      const container = document.getElementById('chat-messages-container');
+
+      // 1. Render User Bubble
+      const userBubble = document.createElement('div');
+      userBubble.className = 'chat-bubble user';
+      userBubble.innerText = userText;
+      container.appendChild(userBubble);
+      container.scrollTop = container.scrollHeight;
+
+      // 2. Render Temporary Typing Indicator
+      const typingBubble = document.createElement('div');
+      typingBubble.className = 'chat-bubble bot';
+      typingBubble.id = 'bot-typing-indicator';
+      typingBubble.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+      container.appendChild(typingBubble);
+      container.scrollTop = container.scrollHeight;
+
+      chatConversationHistory.push({ role: 'user', content: userText });
+
+      const storedKey = localStorage.getItem('restok_gemini_api_key') || '';
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: userText,
+            history: chatConversationHistory.slice(-6),
+            api_key: storedKey
+          })
+        });
+
+        const data = await res.json();
+        const existingTyping = document.getElementById('bot-typing-indicator');
+        if (existingTyping) existingTyping.remove();
+
+        const botBubble = document.createElement('div');
+        botBubble.className = 'chat-bubble bot';
+        botBubble.innerHTML = formatMarkdown(data.reply);
+        container.appendChild(botBubble);
+        container.scrollTop = container.scrollHeight;
+
+        chatConversationHistory.push({ role: 'model', content: data.reply });
+
+        // Update badge dynamically
+        if (data.engine === 'gemini-2.5-flash') {
+          const badge = document.getElementById('copilot-model-label');
+          if (badge) badge.innerText = 'Connected: Gemini 2.5 Flash';
+          const dot = document.getElementById('copilot-status-dot');
+          if (dot) dot.style.background = 'var(--accent-emerald)';
+        }
+      } catch (err) {
+        console.error('Chat API Error:', err);
+        const existingTyping = document.getElementById('bot-typing-indicator');
+        if (existingTyping) existingTyping.remove();
+
+        const errBubble = document.createElement('div');
+        errBubble.className = 'chat-bubble bot';
+        errBubble.innerHTML = '<span style="color:var(--accent-rose);">Could not connect to AI Copilot service. Please verify server status.</span>';
+        container.appendChild(errBubble);
+        container.scrollTop = container.scrollHeight;
+      }
+    }
+
+    function sendPresetPrompt(promptText) {
+      const inputEl = document.getElementById('chat-user-input');
+      if (inputEl) {
+        inputEl.value = promptText;
+        sendChatMessage();
+      }
+    }
+
+    function promptApiKey() {
+      const current = localStorage.getItem('restok_gemini_api_key') || '';
+      const key = prompt('Enter your Google Gemini API Key (or clear it to use the built-in Local Analytical Engine):', current);
+      if (key !== null) {
+        if (key.trim()) {
+          localStorage.setItem('restok_gemini_api_key', key.trim());
+          alert('Gemini API Key stored! Copilot will now query Gemini 2.5 Flash with live function calling.');
+          updateKeyUI(true);
+        } else {
+          localStorage.removeItem('restok_gemini_api_key');
+          alert('Local Analytical Engine active.');
+          updateKeyUI(false);
+        }
+      }
+    }
+
+    function updateKeyUI(hasKey) {
+      const label = document.getElementById('copilot-model-label');
+      const dot = document.getElementById('copilot-status-dot');
+      if (hasKey) {
+        if (label) label.innerText = 'Gemini 2.5 Flash (Key Configured)';
+        if (dot) dot.style.background = 'var(--accent-emerald)';
+      } else {
+        if (label) label.innerText = 'Gemini 2.5 Flash / Local Engine';
+        if (dot) dot.style.background = 'var(--accent-blue)';
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', initApp);
+  </script>
+</body>
+</html>

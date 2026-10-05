@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  restok-api:
+    build: .
+    container_name: restok-engine
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data/processed:/app/data/processed
+      - ./config:/app/config
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped

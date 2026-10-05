@@ -1,0 +1,58 @@
+# Restok: Master Configuration
+# Centralizes all data slicing, supply chain parameters, and model assumptions
+
+project:
+  name: "Restok"
+  description: "14-day Store x SKU demand forecasting driving automated replenishment"
+  seed: 42
+
+data:
+  raw_dir: "data/raw/m5"
+  processed_dir: "data/processed"
+  category: "FOODS"
+  stores:
+    - "CA_1"
+    - "CA_2"
+    - "TX_1"
+    - "TX_2"
+    - "WI_1"
+  # Slicing parameters designed to produce ~54,000 rows (satisfying >= 40k requirement)
+  skus_per_dept:
+    FOODS_1: 15
+    FOODS_2: 15
+    FOODS_3: 30
+  start_d: 1762
+  end_d: 1941
+  forecast_horizon: 14
+
+supply_chain:
+  margin_rate: 0.35             # Gross margin used to derive Unit_Cost
+  annual_holding_cost_rate: 0.20 # Annual cost of holding inventory
+  stockout_penalty_rate: 1.5    # Penalty multiplier for lost demand
+  
+  # Category-specific supply parameters
+  categories:
+    FOODS_1:
+      is_perishable: false
+      shelf_life_days: 90
+      lead_time_days: 3
+      case_pack: 12
+      critical_ratio: 0.75
+    FOODS_2:
+      is_perishable: true
+      shelf_life_days: 14
+      lead_time_days: 2
+      case_pack: 6
+      critical_ratio: 0.85
+    FOODS_3:
+      is_perishable: true
+      shelf_life_days: 7
+      lead_time_days: 1
+      case_pack: 4
+      critical_ratio: 0.90
+
+simulation:
+  initial_inventory_days: 7
+  target_stockout_rate_min: 0.05
+  target_stockout_rate_max: 0.12
+  num_seeds: 20
