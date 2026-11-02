@@ -23,25 +23,25 @@ logger = logging.getLogger(__name__)
 
 
 def compute_holiday_proximity(dates: pd.Series, holiday_dates: List[pd.Timestamp]) -> Tuple[np.ndarray, np.ndarray]:
-    """Computes days to nearest future holiday and days since nearest past holiday."""
+    """Computes days to nearest future holiday and days since nearest past holiday vectorized."""
     h_array = np.array([h.to_datetime64() for h in holiday_dates], dtype="datetime64[D]")
     d_array = dates.dt.floor("D").values.astype("datetime64[D]")
 
-    days_to = np.full(len(dates), 30, dtype=np.int16)
-    days_since = np.full(len(dates), 30, dtype=np.int16)
+    h_sorted = np.sort(h_array)
 
-    for i, cur_d in enumerate(d_array):
-        # Future holidays
-        future_diffs = (h_array - cur_d).astype(int)
-        valid_future = future_diffs[future_diffs >= 0]
-        if len(valid_future) > 0:
-            days_to[i] = min(30, np.min(valid_future))
+    # Days to next future holiday
+    idx_future = np.searchsorted(h_sorted, d_array, side="left")
+    valid_future_mask = idx_future < len(h_sorted)
+    safe_idx_future = np.clip(idx_future, 0, len(h_sorted) - 1)
+    diff_future = np.where(valid_future_mask, (h_sorted[safe_idx_future] - d_array).astype(int), 30)
+    days_to = np.clip(diff_future, 0, 30).astype(np.int16)
 
-        # Past holidays
-        past_diffs = (cur_d - h_array).astype(int)
-        valid_past = past_diffs[past_diffs >= 0]
-        if len(valid_past) > 0:
-            days_since[i] = min(30, np.min(valid_past))
+    # Days since past holiday
+    idx_past = np.searchsorted(h_sorted, d_array, side="right") - 1
+    valid_past_mask = idx_past >= 0
+    safe_idx_past = np.clip(idx_past, 0, len(h_sorted) - 1)
+    diff_past = np.where(valid_past_mask, (d_array - h_sorted[safe_idx_past]).astype(int), 30)
+    days_since = np.clip(diff_past, 0, 30).astype(np.int16)
 
     return days_to, days_since
 

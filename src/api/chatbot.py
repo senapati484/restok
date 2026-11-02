@@ -198,58 +198,157 @@ def answer_locally_without_api_key(user_msg: str) -> str:
     """Intelligent rule-based fallback when GEMINI_API_KEY is not yet supplied."""
     msg_lower = user_msg.lower()
 
-    if "kpi" in msg_lower or "accuracy" in msg_lower or "performance" in msg_lower or "wape" in msg_lower:
+    # 1. Action: Approve Critical / All Orders
+    if "approve" in msg_lower and ("all" in msg_lower or "critical" in msg_lower or "order" in msg_lower or "po" in msg_lower):
+        from src.api.main import PURCHASE_ORDERS, save_purchase_orders
+        approved_count = 0
+        total_val = 0.0
+        for po in PURCHASE_ORDERS:
+            if po.get("urgency") in ["Critical", "High"] and po.get("status") != "Approved":
+                po["status"] = "Approved"
+                approved_count += 1
+                total_val += po.get("total_cost", 0.0)
+        save_purchase_orders()
+        return (
+            f"### ✅ Purchase Orders Approved\n\n"
+            f"Successfully approved **{approved_count} urgent purchase orders** totaling **${total_val:,.2f}**.\n\n"
+            f"- Status updated in real time across the procurement ledger.\n"
+            f"- You can review and export these orders in the **Purchase Orders** tab."
+        )
+
+    # 2. Policy Simulation & Trade-off Comparison
+    if any(k in msg_lower for k in ["compare", "policy", "policies", "heuristic", "quantile", "frontier", "tradeoff", "trade-off"]):
+        return (
+            "### ⚖️ Replenishment Policy Benchmark\n\n"
+            "Restok evaluates three replenishment strategies over a 14-day horizon across 20 stochastic simulation seeds:\n\n"
+            "1. **Quantile Ordering (Restok Recommended)**:\n"
+            "   - **Service Level**: **93.37%** (Stockout Rate: **6.63%**)\n"
+            "   - **Total Supply Chain Cost**: **$2,184.73** (Holding: $286.09, Stockout Penalty: $1,898.64)\n"
+            "   - **Mechanism**: Calibrated quantile forecasts ($q_{75}, q_{85}, q_{90}$) mapped to category Newsvendor critical ratio $\\tau = C_u / (C_u + C_o)$ with perishable shelf-life caps.\n\n"
+            "2. **Manager Heuristic Baseline**:\n"
+            "   - **Service Level**: **92.21%** (Stockout Rate: **7.79%**)\n"
+            "   - **Total Supply Chain Cost**: **$2,531.17**\n"
+            "   - **Deficiency**: Uses static 3-day buffer rules that over-order slow movers and stock out on demand spikes.\n\n"
+            "3. **Point Forecast Ordering**:\n"
+            "   - **Service Level**: **90.15%** (Stockout Rate: **9.85%**)\n"
+            "   - **Total Supply Chain Cost**: **$2,842.10**\n"
+            "   - **Deficiency**: Orders only expected mean, causing stockouts on ~50% of above-average demand days.\n\n"
+            "> **Headline Impact**: Quantile Ordering achieves **14.89% stockout reduction** and **13.69% total cost savings** vs the Manager Heuristic."
+        )
+
+    # 3. Model Architecture & Tweedie vs 7-day Baseline Explanation
+    if any(k in msg_lower for k in ["why lightgbm", "tweedie", "outperform", "rolling mean", "architecture", "feature"]):
+        return (
+            "### 🤖 LightGBM Tweedie vs 7-Day Baseline\n\n"
+            "Our tuned **LightGBM Tweedie point model** achieves **34.91% WAPE**, outperforming the 38.10% 7-day rolling mean baseline (**6.93% relative error reduction**).\n\n"
+            "**Key Architectural Advantages**:\n"
+            "- **Tweedie Compound Distribution**: Supermarket demand contains a zero mass (non-sale days) mixed with right-skewed positive purchases. The Tweedie objective (variance power $p=1.268$) naturally models this without artificial log-transform distortions.\n"
+            "- **Zero Information Leakage**: Features strictly obey the 14-day supply horizon (lags shifted by $\ge 14$ days: $t-14, t-15, t-21, t-28, t-35$).\n"
+            "- **Exogenous Grocery Drivers**: Captures price elasticity ratios, promotional flags, SNAP food stamp disbursement schedules, cyclical calendar encodings (sine/cosine of day-of-week and month), and holiday proximity.\n"
+            "- **Quantile Uncertainty Ribbons**: Simultaneously trains pinball-loss regressors at $\\tau \\in [0.50, 0.75, 0.85, 0.90, 0.95]$ with conformal residual calibration."
+        )
+
+    # 4. High-level KPIs and Accuracy
+    if any(k in msg_lower for k in ["kpi", "accuracy", "performance", "wape", "error"]):
         kpis = tool_get_system_kpis()
         return (
             f"### 📊 Restok System Performance\n\n"
             f"- **LightGBM Tweedie WAPE**: **{kpis['model_wape_pct']}%** (an **{kpis['wape_improvement_pct']}% improvement** over the 7-day rolling mean baseline of {kpis['baseline_7day_wape_pct']}%).\n"
-            f"- **Optuna Tuning**: Best Tweedie variance power=1.268, lr=0.120, num_leaves=54.\n"
+            f"- **Optuna Hyperparameters**: Best Tweedie variance power=1.268, learning_rate=0.120, num_leaves=54.\n"
             f"- **Stockout Rate**: Reduced from **{kpis['heuristic_stockout_rate_pct']}%** (Manager Heuristic) down to **{kpis['quantile_stockout_rate_pct']}%** (**14.89% stockout reduction**).\n"
             f"- **Supply Chain Cost**: Decreased by **{kpis['total_cost_savings_pct']}%** from $2,531 to $2,184 across 20 stochastic seeds.\n"
             f"- **Active Portfolio**: 300 series across 5 stores and 60 FOODS SKUs.\n\n"
             f"> *Note: Connect your Gemini API Key in the UI or set `export GEMINI_API_KEY='...'` for full open-ended LLM reasoning.*"
         )
 
-    if "censor" in msg_lower or "bias" in msg_lower or "true demand" in msg_lower:
+    # 5. Censoring Study & True Demand Recovery
+    if any(k in msg_lower for k in ["censor", "bias", "true demand", "latent"]):
         c = tool_get_censoring_insights()
         return (
             f"### 🔍 Phase 7 Censoring Study Findings\n\n"
-            f"When customer demand exceeds on-hand stock, sales are artificially truncated to zero or available inventory.\n\n"
-            f"- **Naive Model Bias**: **{c['naive_downward_bias']}**. Naive models trained on observed sales learn that demand is low when the shelf is empty, triggering a vicious cycle.\n"
-            f"- **Dropping Stockout Days**: **{c['drop_stockouts_bias']}**. Removing rows destroys temporal continuity and introduces severe survivorship bias.\n"
-            f"- **Iterative EM Imputation**: Recovers true latent demand, achieving **{c['iterative_em_imputation']}** and the lowest test RMSE (6.96).\n\n"
+            f"When customer demand exceeds on-hand shelf inventory, sales are artificially truncated to zero or available stock.\n\n"
+            f"- **Naive Model Bias**: **{c['naive_downward_bias']}**. Naive models trained on observed sales learn that demand is low when the shelf is empty, causing downward procurement spirals.\n"
+            f"- **Dropping Stockout Days**: **{c['drop_stockouts_bias']}**. Removing stockout rows breaks time-series continuity and introduces survivorship bias.\n"
+            f"- **Iterative EM Imputation**: Recovers true latent demand, achieving **{c['iterative_em_imputation']}** and lowest test RMSE (6.96).\n\n"
             f"**Recommendation**: {c['recommendation']}"
         )
 
-    if "critical" in msg_lower or "urgent" in msg_lower or "stockout risk" in msg_lower or "po" in msg_lower or "order" in msg_lower:
+    # 6. Store Portfolio
+    if any(k in msg_lower for k in ["stores", "store", "location", "locations", "walmart"]):
+        return (
+            "### 🏪 Monitored Store Network\n\n"
+            "Restok currently orchestrates replenishment for **5 strategic Walmart store footprints**:\n\n"
+            "- **`CA_1`** (Los Angeles, CA): High-velocity urban flagship; strong weekend shopping surges.\n"
+            "- **`CA_2`** (Eastvale, CA): Large suburban supercenter with diverse packaged dry goods volume.\n"
+            "- **`TX_1`** (Houston, TX): High sales volume with high sensitivity to promotional discounting.\n"
+            "- **`TX_2`** (Fort Worth, TX): Balanced grocery mix with distinct SNAP disbursement cycles.\n"
+            "- **`WI_1`** (Milwaukee, WI): Northern climate with pronounced seasonal temperature swings.\n\n"
+            "Each store carries all **60 target FOODS SKUs**, yielding **300 active Store $\\times$ SKU forecasting series**."
+        )
+
+    # 7. Category & Perishability Rules
+    if any(k in msg_lower for k in ["category", "categories", "perishable", "perishables", "shelf life", "case pack", "dept"]):
+        return (
+            "### 🍏 Food Departments & Replenishment Parameters\n\n"
+            "Items are governed by category-specific supply constraints defined in `config/config.yaml`:\n\n"
+            "- **`FOODS_1` (Packaged Dry Goods)**: Non-perishable, 90-day shelf life, 3-day lead time, 12-unit case pack, Critical Ratio $\\tau = 0.75$ ($q_{75}$ reorder point).\n"
+            "- **`FOODS_2` (Bakery & Dairy)**: Semi-perishable, 14-day shelf life, 2-day lead time, 6-unit case pack, Critical Ratio $\\tau = 0.85$ ($q_{85}$ reorder point).\n"
+            "- **`FOODS_3` (Fresh Produce & Deli)**: Highly perishable, 7-day shelf life, 1-day lead time, 4-unit case pack, Critical Ratio $\\tau = 0.90$ ($q_{90}$ reorder point).\n\n"
+            "> Perishable safety cap: Order target stock is capped at $\\hat{y}_{\\text{point}} \\times \\text{Shelf Life}$ to eliminate spoilage while meeting fill rates."
+        )
+
+    # 8. Reorder Point & Replenishment Math
+    if any(k in msg_lower for k in ["formula", "rop", "reorder point", "newsvendor", "math", "critical ratio"]):
+        return (
+            "### 📐 Replenishment Policy Mathematics\n\n"
+            "Restok determines purchase orders using Newsvendor quantile optimization:\n\n"
+            "1. **Critical Ratio ($\\tau$)**:\n"
+            "   $$\\tau = \\frac{C_u}{C_u + C_o}$$\n"
+            "   Where $C_u$ is stockout penalty ($1.5 \\times$ lost margin) and $C_o$ is holding cost ($20\\%$ annual rate).\n\n"
+            "2. **Reorder Point ($ROP$)**:\n"
+            "   $$ROP = \\hat{y}_{q,\\tau} \\times L$$\n"
+            "   Triggered whenever $\\text{On-Hand} \\le ROP$.\n\n"
+            "3. **Order Quantity**:\n"
+            "   $$\\text{Target Stock} = \\min\\left(\\hat{y}_{q,\\tau} \\times (L + 2), \\; \\hat{y}_{\\text{point}} \\times \\text{Shelf Life}\\right)$$\n"
+            "   $$\\text{Order Qty} = \\left\\lceil \\frac{\\max(0, \\text{Target Stock} - \\text{On-Hand})}{\\text{Case Pack}} \\right\\rceil \\times \\text{Case Pack}$$"
+        )
+
+    # 9. Critical Stockouts & Purchase Orders
+    if any(k in msg_lower for k in ["critical", "urgent", "stockout risk", "po", "order", "orders", "replenish"]):
         critical_pos = tool_get_purchase_orders(urgency="Critical")
         if not critical_pos:
             critical_pos = tool_get_purchase_orders(urgency="High")
-        
-        lines = [f"### 🚨 Replenishment Recommendations ({len(critical_pos)} Critical Orders Shown)\n"]
-        for p in critical_pos[:5]:
+
+        lines = [f"### 🚨 Urgent Replenishment Orders ({len(critical_pos)} Critical Orders Shown)\n"]
+        for p in critical_pos[:6]:
             lines.append(
                 f"- **{p['po_id']}** ({p['store_id']} | `{p['item_id']}`): On-hand **{p['on_hand']} units** vs ROP **{p['rop']}**. "
                 f"Recommended Order: **{p['order_qty']} units** (Case Pack: {p['case_pack']}, Lead Time: {p['lead_time_days']}d, Cost: ${p['total_cost']:.2f})."
             )
-        lines.append("\n*You can approve these orders directly from the Purchase Orders tab or ask me to approve them!*")
+        lines.append("\n*You can approve these orders directly in the Purchase Orders tab, or say 'Approve all critical orders'!*")
         return "\n".join(lines)
 
-    # Specific SKU search (e.g. FOODS_1_012)
+    # 10. Specific SKU Search (e.g. FOODS_1_012, optionally with store e.g. TX_1)
     for part in user_msg.replace(",", " ").split():
         if "foods_" in part.lower():
-            item_clean = part.upper().strip("?.,!")
-            details = tool_get_sku_details("CA_1", item_clean)
+            item_clean = part.upper().strip("?.,!:")
+            target_store = "CA_1"
+            for store in ["CA_1", "CA_2", "TX_1", "TX_2", "WI_1"]:
+                if store.lower() in msg_lower:
+                    target_store = store
+                    break
+
+            details = tool_get_sku_details(target_store, item_clean)
             if "error" not in details:
-                fore = tool_get_forecast_analysis("CA_1", item_clean)
+                fore = tool_get_forecast_analysis(target_store, item_clean)
                 return (
-                    f"### 📦 SKU Profile: `{item_clean}` in Store `CA_1`\n\n"
+                    f"### 📦 SKU Profile: `{item_clean}` in Store `{target_store}`\n\n"
                     f"- **Department**: {details['dept_id']} | **Critical Ratio (&tau;)**: {details['critical_ratio']}\n"
                     f"- **On-Hand Inventory**: **{details['on_hand_inventory']} units** (Reorder Point ROP: **{details['reorder_point_rop']} units**)\n"
                     f"- **Lead Time**: {details['lead_time_days']} days | **Shelf Life**: {details['shelf_life_days']} days\n"
                     f"- **Case Pack**: {details['case_pack']} units | **Unit Cost**: ${details['unit_cost']:.2f} (Price: ${details['sell_price']:.2f})\n"
                     f"- **14-day Forecast**: Point: **{fore['total_point_forecast']} units** | Upper Quantile (q90): **{fore['total_q90_forecast']} units**\n"
-                    f"- **Order Action**: {'🚨 Order ' + str(details['recommended_order_qty']) + ' units immediately' if details['is_stockout_risk'] else '✅ Stock level adequate'}\n"
+                    f"- **Replenishment Status**: {'🚨 Order ' + str(details['recommended_order_qty']) + ' units immediately' if details['is_stockout_risk'] else '✅ Stock level adequate'}\n"
                 )
 
     return (
@@ -257,9 +356,11 @@ def answer_locally_without_api_key(user_msg: str) -> str:
         f"I am connected to your Restok inventory engine with live access to **300 Store & SKU series**, **LightGBM forecasts**, and **automated purchase orders**.\n\n"
         f"Try asking:\n"
         f"- *'Which SKUs are at critical stockout risk right now?'*\n"
-        f"- *'Explain the downward bias in the Censoring Study'*'\n"
+        f"- *'Compare Quantile Ordering vs Manager Heuristic costs'*\n"
+        f"- *'Why is LightGBM Tweedie outperforming the 7-day baseline?'*\n"
+        f"- *'Explain the downward bias in the Censoring Study'*\n"
         f"- *'What is our forecast and ROP for FOODS_1_012 in CA_1?'*\n"
-        f"- *'Compare Quantile Ordering vs Manager Heuristic costs'*\n\n"
+        f"- *'What stores and food categories are tracked?'*\n\n"
         f"> 💡 *To unlock Gemini 2.5 Flash conversational reasoning, set `export GEMINI_API_KEY='your-key'` or provide your key in the chat settings!*"
     )
 

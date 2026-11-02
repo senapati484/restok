@@ -38,16 +38,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# In-memory Purchase Orders store
+# Purchase Orders persistence and state
 PURCHASE_ORDERS: List[Dict] = []
+PO_STATE_FILE = PROCESSED_DIR / "purchase_orders_state.json"
 
 
-def init_purchase_orders() -> None:
-    """Initializes purchase order recommendations from latest test slice."""
+def save_purchase_orders() -> None:
+    """Persists purchase orders to JSON for durability across restarts."""
+    try:
+        with open(PO_STATE_FILE, "w", encoding="utf-8") as f:
+            json.dump(PURCHASE_ORDERS, f, indent=2)
+    except Exception as e:
+        logger.error("Failed to persist purchase orders: %s", e)
+
+
+def generate_fresh_purchase_orders() -> List[Dict]:
+    """Computes purchase order recommendations directly from latest test predictions."""
     global PURCHASE_ORDERS
     forecasts_path = PROCESSED_DIR / "test_forecasts.parquet"
     if not forecasts_path.exists():
-        return
+        PURCHASE_ORDERS = []
+        return []
 
     df = pd.read_parquet(forecasts_path)
     last_date = df["date"].max()
@@ -92,7 +103,23 @@ def init_purchase_orders() -> None:
                     "status": "Pending",
                 })
     PURCHASE_ORDERS = po_records
-    logger.info("Initialized %d Purchase Order recommendations", len(PURCHASE_ORDERS))
+    save_purchase_orders()
+    logger.info("Generated and saved %d fresh Purchase Orders", len(PURCHASE_ORDERS))
+    return PURCHASE_ORDERS
+
+
+def init_purchase_orders() -> None:
+    """Loads existing purchase orders from state file or initializes fresh recommendations."""
+    global PURCHASE_ORDERS
+    if PO_STATE_FILE.exists():
+        try:
+            with open(PO_STATE_FILE, "r", encoding="utf-8") as f:
+                PURCHASE_ORDERS = json.load(f)
+            logger.info("Loaded %d Purchase Orders from saved state (%s)", len(PURCHASE_ORDERS), PO_STATE_FILE.name)
+            return
+        except Exception as e:
+            logger.warning("Failed to parse saved PO state (%s), re-generating...", e)
+    generate_fresh_purchase_orders()
 
 
 init_purchase_orders()
@@ -118,6 +145,31 @@ def chat_endpoint(req: ChatRequest):
 @app.get("/api/health")
 def health_check():
     return {"status": "ok", "app": "Restok", "series_tracked": 300, "forecast_horizon_days": 14}
+
+
+@app.get("/api/summary")
+def get_system_summary():
+    """Returns aggregated executive summary combining model metrics and PO portfolio statistics."""
+    kpi_data = get_kpis()
+    critical_pos = [po for po in PURCHASE_ORDERS if po.get("urgency") == "Critical"]
+    high_pos = [po for po in PURCHASE_ORDERS if po.get("urgency") == "High"]
+    pending_pos = [po for po in PURCHASE_ORDERS if po.get("status") == "Pending"]
+    approved_pos = [po for po in PURCHASE_ORDERS if po.get("status") == "Approved"]
+    total_spend = sum(po.get("total_cost", 0.0) for po in PURCHASE_ORDERS)
+    approved_spend = sum(po.get("total_cost", 0.0) for po in approved_pos)
+
+    return {
+        **kpi_data,
+        "po_summary": {
+            "total_orders": len(PURCHASE_ORDERS),
+            "critical_count": len(critical_pos),
+            "high_count": len(high_pos),
+            "pending_count": len(pending_pos),
+            "approved_count": len(approved_pos),
+            "total_spend_usd": round(total_spend, 2),
+            "approved_spend_usd": round(approved_spend, 2),
+        }
+    }
 
 
 @app.get("/api/kpis")
@@ -311,8 +363,43 @@ def update_purchase_order(po_id: str, req: POUpdateRequest):
                 po["total_cost"] = round(po["order_qty"] * po["unit_cost"], 2)
             if req.status is not None:
                 po["status"] = req.status
+            save_purchase_orders()
             return {"status": "success", "po": po}
     raise HTTPException(status_code=404, detail="Purchase order not found")
+
+
+@app.post("/api/purchase-orders/approve-all")
+def approve_all_purchase_orders(urgency: Optional[str] = "Critical"):
+    """Approves all purchase orders matching the specified urgency (default: Critical, or 'ALL')."""
+    global PURCHASE_ORDERS
+    approved_count = 0
+    total_approved_value = 0.0
+
+    for po in PURCHASE_ORDERS:
+        match_urgency = (
+            urgency is None
+            or urgency.upper() == "ALL"
+            or po.get("urgency", "").upper() == urgency.upper()
+        )
+        if match_urgency and po.get("status") != "Approved":
+            po["status"] = "Approved"
+            approved_count += 1
+            total_approved_value += po.get("total_cost", 0.0)
+
+    save_purchase_orders()
+    logger.info("Batch approved %d purchase orders ($%.2f)", approved_count, total_approved_value)
+    return {
+        "status": "success",
+        "approved_count": approved_count,
+        "total_approved_value": round(total_approved_value, 2),
+    }
+
+
+@app.post("/api/purchase-orders/reset")
+def reset_purchase_orders():
+    """Regenerates clean purchase orders from model predictions, resetting all edits."""
+    records = generate_fresh_purchase_orders()
+    return {"status": "success", "count": len(records)}
 
 
 @app.get("/", response_class=HTMLResponse)

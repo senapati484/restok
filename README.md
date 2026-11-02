@@ -95,20 +95,23 @@ When customer demand exceeds on-hand stock, sales are censored. Training models 
 
 ### Option A: Local Virtual Environment
 ```bash
-# Activate environment
-source .venv/bin/activate
+# 1. Install dependencies
+pip install -r requirements.txt
 
-# Run automated test suite
-pytest tests/ -v
+# 2. (Optional) Configure Gemini API Key in .env
+cp .env.example .env
 
-# Start FastAPI server & Dashboard
-uvicorn src.api.main:app --port 8000 --reload
+# 3. Run automated test suite
+make test   # or: pytest tests/ -v
+
+# 4. Start FastAPI server & Dashboard
+make server # or: uvicorn src.api.main:app --port 8000 --reload
 ```
 Open **[http://localhost:8000](http://localhost:8000)** in your browser.
 
 ### Option B: Docker Container
 ```bash
-docker-compose up --build
+make docker-up # or: docker compose up --build
 ```
 Open **[http://localhost:8000](http://localhost:8000)**.
 
@@ -116,6 +119,7 @@ Open **[http://localhost:8000](http://localhost:8000)**.
 
 ## 4. API Documentation
 Once running, the interactive Swagger documentation is available at **[http://localhost:8000/docs](http://localhost:8000/docs)**:
+- `GET /api/summary`: Complete executive overview combining model accuracy and real-time PO metrics.
 - `GET /api/kpis`: Real-time system performance indicators.
 - `GET /api/forecasts?store_id=CA_1&item_id=FOODS_1_001`: 14-day quantile predictions and history.
 - `GET /api/policies`: Benchmark matrix with 95% confidence intervals.
@@ -123,6 +127,8 @@ Once running, the interactive Swagger documentation is available at **[http://lo
 - `GET /api/censoring`: Headline censoring study results.
 - `GET /api/purchase-orders`: Automated replenishment PO queue.
 - `POST /api/purchase-orders/{po_id}/update`: Inline edit order quantity or approve.
+- `POST /api/purchase-orders/approve-all`: Batch approve orders by urgency.
+- `POST /api/purchase-orders/reset`: Regenerate fresh PO recommendations from models.
 - `POST /api/chat`: Grounded Gemini Copilot for demand forecasting and inventory reasoning.
 
 ---

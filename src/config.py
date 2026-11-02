@@ -1,7 +1,12 @@
 """Configuration loader for Restok."""
+import os
 from pathlib import Path
 from typing import Any, Dict, List
 import yaml
+from dotenv import load_dotenv
+
+# Load local environment variables from .env if present
+load_dotenv()
 
 CONFIG_PATH = Path(__file__).resolve().parent.parent / "config" / "config.yaml"
 

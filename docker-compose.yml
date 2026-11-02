@@ -11,4 +11,5 @@ services:
       - ./config:/app/config
     environment:
       - PYTHONUNBUFFERED=1
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
     restart: unless-stopped

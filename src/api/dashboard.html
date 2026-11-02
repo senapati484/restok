@@ -1170,10 +1170,38 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg>
             Approve All Critical
           </button>
+          <button class="btn btn-secondary" onclick="resetPORecommendations()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
+            Reset
+          </button>
           <button class="btn btn-secondary" onclick="exportPOCSV()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Export Orders CSV
           </button>
+        </div>
+      </div>
+
+      <!-- PO Operational Status Bar -->
+      <div class="metric-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 1.25rem;">
+        <div class="metric-card" style="padding: 0.85rem 1rem;">
+          <div class="metric-top"><span>TOTAL ORDERS TRIGGERED</span></div>
+          <div class="metric-value tnum" id="po-summary-total" style="font-size:1.35rem;">--</div>
+          <div class="metric-sub">Across 5 Walmart stores</div>
+        </div>
+        <div class="metric-card" style="padding: 0.85rem 1rem;">
+          <div class="metric-top"><span>CRITICAL STOCKOUT RISK</span></div>
+          <div class="metric-value tnum" id="po-summary-critical" style="font-size:1.35rem; color:var(--accent-rose);">--</div>
+          <div class="metric-sub" id="po-summary-critical-sub">On-hand at or near 0</div>
+        </div>
+        <div class="metric-card" style="padding: 0.85rem 1rem;">
+          <div class="metric-top"><span>ESTIMATED COMMITMENT</span></div>
+          <div class="metric-value tnum" id="po-summary-spend" style="font-size:1.35rem; color:var(--accent-blue);">--</div>
+          <div class="metric-sub" id="po-summary-approved-spend">Approved: $0.00</div>
+        </div>
+        <div class="metric-card" style="padding: 0.85rem 1rem;">
+          <div class="metric-top"><span>APPROVAL PROGRESS</span></div>
+          <div class="metric-value tnum" id="po-summary-rate" style="font-size:1.35rem; color:var(--accent-emerald);">--</div>
+          <div class="metric-sub" id="po-summary-status-count">Pending: -- | Approved: --</div>
         </div>
       </div>
 
@@ -1262,6 +1290,10 @@
             <button class="btn btn-secondary" onclick="promptApiKey()" style="padding:4px 9px;">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m21 2-2 2m-7.6 7.6a5.5 5.5 0 1 1-7.8 7.8 5.5 5.5 0 0 1 7.8-7.8zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
               Set Key
+            </button>
+            <button class="btn btn-secondary" onclick="clearChatHistory()" style="padding:4px 9px;" title="Reset chat history">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              Clear
             </button>
           </div>
         </div>
@@ -1601,6 +1633,28 @@
     }
 
     function renderPOTable() {
+      // 1. Live Header Metric Bar Computation
+      const totalOrders = purchaseOrdersData.length;
+      const criticalOrders = purchaseOrdersData.filter(p => p.urgency === 'Critical').length;
+      const highOrders = purchaseOrdersData.filter(p => p.urgency === 'High').length;
+      const approvedOrders = purchaseOrdersData.filter(p => p.status === 'Approved').length;
+      const pendingOrders = purchaseOrdersData.filter(p => p.status === 'Pending').length;
+      const totalSpend = purchaseOrdersData.reduce((acc, p) => acc + (p.total_cost || 0), 0);
+      const approvedSpend = purchaseOrdersData.filter(p => p.status === 'Approved').reduce((acc, p) => acc + (p.total_cost || 0), 0);
+      const approvalRate = totalOrders > 0 ? ((approvedOrders / totalOrders) * 100).toFixed(1) : '0.0';
+
+      const elTotal = document.getElementById('po-summary-total');
+      if (elTotal) {
+        elTotal.innerText = totalOrders;
+        document.getElementById('po-summary-critical').innerText = criticalOrders;
+        document.getElementById('po-summary-critical-sub').innerText = `Critical: ${criticalOrders} | High: ${highOrders}`;
+        document.getElementById('po-summary-spend').innerText = `$${totalSpend.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        document.getElementById('po-summary-approved-spend').innerText = `Approved: $${approvedSpend.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        document.getElementById('po-summary-rate').innerText = `${approvalRate}%`;
+        document.getElementById('po-summary-status-count').innerText = `Pending: ${pendingOrders} | Approved: ${approvedOrders}`;
+      }
+
+      // 2. Filter Table
       const searchVal = (document.getElementById('po-search')?.value || '').toLowerCase().trim();
       const urgencyVal = document.getElementById('po-filter-urgency')?.value || 'ALL';
       const statusVal = document.getElementById('po-filter-status')?.value || 'ALL';
@@ -1653,9 +1707,10 @@
             </span>
           </td>
           <td>
-            <button class="btn btn-secondary" onclick="setPOStatus('${po.po_id}', 'Approved')" style="padding:4px 8px; font-size:0.72rem;">
-              Approve
-            </button>
+            ${po.status !== 'Approved' 
+              ? `<button class="btn btn-secondary" onclick="setPOStatus('${po.po_id}', 'Approved')" style="padding:4px 8px; font-size:0.72rem;">Approve</button>`
+              : `<button class="btn btn-secondary" onclick="setPOStatus('${po.po_id}', 'Pending')" style="padding:4px 8px; font-size:0.72rem; opacity:0.7;">Undo</button>`
+            }
           </td>
         </tr>
       `).join('');
@@ -1689,17 +1744,42 @@
     }
 
     async function approveAllCritical() {
-      for (const po of purchaseOrdersData) {
-        if (po.urgency === 'Critical') {
-          po.status = 'Approved';
-          fetch(`/api/purchase-orders/${po.po_id}/update`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: 'Approved' })
-          });
+      try {
+        const res = await fetch('/api/purchase-orders/approve-all?urgency=Critical', { method: 'POST' });
+        const data = await res.json();
+        for (const po of purchaseOrdersData) {
+          if (po.urgency === 'Critical') {
+            po.status = 'Approved';
+          }
         }
+        renderPOTable();
+      } catch (err) {
+        console.error('Error approving critical orders:', err);
       }
-      renderPOTable();
+    }
+
+    async function resetPORecommendations() {
+      if (!confirm('Reset all purchase orders back to fresh model-generated recommendations? Any manual edits or approvals will be refreshed.')) {
+        return;
+      }
+      try {
+        await fetch('/api/purchase-orders/reset', { method: 'POST' });
+        await loadPurchaseOrders();
+      } catch (err) {
+        console.error('Error resetting PO recommendations:', err);
+      }
+    }
+
+    function clearChatHistory() {
+      chatConversationHistory = [];
+      const container = document.getElementById('chat-messages-container');
+      container.innerHTML = `
+        <div class="chat-bubble bot">
+          <h3>Restok AI Copilot Ready</h3>
+          <p>Conversation history cleared. I have real-time access to your <strong>300 Store &times; SKU series</strong>, <strong>LightGBM forecasts</strong>, and <strong>purchase orders</strong>.</p>
+          <p style="margin-top:0.4rem; color:var(--text-muted);">Select a quick suggestion below or ask any question.</p>
+        </div>
+      `;
     }
 
     function exportPOCSV() {
