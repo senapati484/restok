@@ -1,0 +1,2 @@
+"""Project documentation generator package."""
+
