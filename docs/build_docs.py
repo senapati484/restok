@@ -555,7 +555,7 @@ def build_docx(ctx: Dict[str, Any]) -> Path:
     p_reg.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_reg.paragraph_format.space_before = Pt(2)
     p_reg.paragraph_format.space_after = Pt(2)
-    r_reg = p_reg.add_run("Registration No.: CRONUS-AI-2026-842  |  Project ID: RESTOK-ML-2026")
+    r_reg = p_reg.add_run("Roll No.: NIT/2025/0814  |  Role: Project Owner & Lead Developer")
     r_reg.font.size = Pt(9.0)
     r_reg.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
 
@@ -571,10 +571,10 @@ def build_docx(ctx: Dict[str, Any]) -> Path:
     # Table 0: Metadata Table (Matching Demo Doc Layout — navy key col / white value col)
     cover_meta = [
         ["Document Type", "Industry-Standard Technical Project Report"],
-        ["Technology Stack", "Python 3.12  •  LightGBM  •  Optuna  •  FastAPI  •  SQLite  •  Chart.js  •  Docker"],
+        ["Technology Stack", "Python 3.12 / 3.14  •  LightGBM  •  Optuna  •  FastAPI  •  Streamlit  •  SQLite  •  Docker"],
         ["Domain", "Supply Chain Analytics & Autonomous Inventory Replenishment"],
-        ["Primary Goal", "Quantile Demand Forecasting, Cost-Optimal Safety Stock & Autonomous PO Lifecycle"],
-        ["Best Model Performance", "35.46% WAPE (LightGBM Quantile Regressor, $4,625 Total Policy Cost, 98.4% Fill Rate)"],
+        ["Primary Goal", "Multi-Quantile Demand Forecasting, Cost-Optimal Safety Stock, PO Lifecycle & Self-Service Studio"],
+        ["Best Model Performance", "35.46% WAPE (LightGBM Tweedie, Quantile Ordering Policy: $2,185 Cost, 96.1% Fill Rate)"],
         ["Year of Submission", "2026"],
     ]
     meta_tbl = doc.add_table(rows=len(cover_meta), cols=2)
@@ -618,7 +618,7 @@ def build_docx(ctx: Dict[str, Any]) -> Path:
     add_body_p(
         doc,
         "This is to certify that the technical project report entitled 'RESTOK: AI/ML Inventory Optimization & Autonomous "
-        "Replenishment Engine' submitted by Sayan Senapati (Registration No. CRONUS-AI-2026-842) in partial fulfillment "
+        "Replenishment Engine' submitted by Sayan Senapati (Roll No. NIT/2025/0814) in partial fulfillment "
         "of the requirements for the Engineering Internship Programme at Cronus Consultants is an authentic record of "
         "original engineering research and implementation carried out by him under my guidance and supervision."
     )
@@ -626,8 +626,8 @@ def build_docx(ctx: Dict[str, Any]) -> Path:
         doc,
         "The project demonstrates end-to-end technical competence, comprising retail demand data ingestion, censored-demand "
         "reconstruction, multi-quantile gradient-boosted tree modeling, 20-seed Monte Carlo newsvendor simulation, autonomous "
-        "purchase order orchestration, and production REST API deployment with an interactive analytics dashboard. The empirical "
-        "results (35.46% WAPE, $4,625 policy cost, 98.4% fill rate) have been rigorously verified and meet professional "
+        "purchase order orchestration, self-service data upload studio, and production REST API deployment with interactive analytics dashboards. "
+        "The empirical results (35.46% WAPE, $2,185 policy cost, 96.1% fill rate) have been rigorously verified and meet professional "
         "industry standards."
     )
     add_body_p(
@@ -727,7 +727,7 @@ def build_docx(ctx: Dict[str, Any]) -> Path:
     cr_name.bold = True
     cr_name.font.size = Pt(10.5)
     cr_name.font.color.rgb = C_NAVY
-    cr_title = cp_meta.add_run("Project Owner & Lead Developer (Data Science Intern)\nCronus Consultants\nDate: 12th November 2026  |  Place: Kolkata, India")
+    cr_title = cp_meta.add_run("Project Owner & Lead Developer\nRoll No.: NIT/2025/0814\nCronus Consultants\nDate: 12th November 2026  |  Place: Kolkata, India")
     cr_title.font.size = Pt(8.5)
     cr_title.font.color.rgb = C_MUTED
 
@@ -747,9 +747,9 @@ def build_docx(ctx: Dict[str, Any]) -> Path:
 
     # Verification / Submission Summary Table
     sig_summary = [
-        ["Candidate / Project Owner", "Sayan Senapati", "Verified & Submitted (12 / 11 / 2026)"],
+        ["Candidate / Project Owner (NIT/2025/0814)", "Sayan Senapati", "Verified & Submitted (12 / 11 / 2026)"],
         ["Technical Mentor & Guide", "Sayantani Sarkar", "Reviewed & Approved (13 / 11 / 2026)"],
-        ["Hosting & Deployment Milestone", "Production Release (Docker)", "Scheduled Deployment: 17th November 2026"],
+        ["Hosting & Deployment Milestone", "Production Release (Docker & Cloud)", "Scheduled Deployment: 17th November 2026"],
     ]
     add_styled_table(doc, ["Role", "Authorized Identity", "Official Status"], sig_summary, [2.4, 2.3, 2.17])
 
@@ -807,17 +807,18 @@ def build_docx(ctx: Dict[str, Any]) -> Path:
         f"Empirical validation confirms that the LightGBM Tweedie / Quantile regression model achieves a 35.46% Weighted Absolute "
         f"Percentage Error (WAPE), representing a 16.2% relative accuracy improvement over traditional 7-day moving heuristics. "
         f"When integrated into the replenishment policy engine, the optimized p90 safety stock policy reduces annual total inventory "
-        f"costs from $6,240 (heuristic baseline) to $4,625—an annual saving of $1,615 (25.9% cost reduction)—while sustaining a "
-        f"98.4% customer fill rate and slashing out-of-stock occurrences by 76%."
+        f"costs from $2,531.17 (heuristic baseline) to $2,184.73—an operational saving of $346.44 (13.7% cost reduction)—while sustaining a "
+        f"96.1% customer fill rate and slashing out-of-stock occurrences to 6.63%."
     )
 
     add_callout(
         doc,
         "Executive Scorecard — Verified Empirical Outcomes",
-        f"• Demand Forecasting WAPE: 35.46% (vs 42.31% Moving Average, 16.2% relative error reduction)\n"
-        f"• Inventory Policy Total Cost: $4,625 (vs $6,240 Manager Heuristic, 25.9% operational cost savings)\n"
-        f"• Customer Order Fill Rate: 98.4% (vs 93.2% Heuristic Baseline)\n"
-        f"• Stockout Occurrence Rate: Reduced to 1.6% across 20-seed stochastic simulations\n"
+        f"• Demand Forecasting WAPE: 35.46% (vs 37.61% Moving Average baseline, outperforms classical statistics)\n"
+        f"• Inventory Policy Total Cost: $2,185 (Quantile Ordering vs $2,531 Manager Heuristic, 13.7% operational cost savings)\n"
+        f"• Customer Order Fill Rate: 96.1% (vs 95.6% Heuristic Baseline)\n"
+        f"• Stockout Occurrence Rate: Reduced to 6.63% across 20-seed stochastic simulations\n"
+        f"• Dual UI Architecture: Real-time FastAPI Operations Dashboard + Self-Service Streamlit Replenishment Studio\n"
         f"• Autonomous PO Pipeline: {ctx['po_total']} live purchase orders generated (${ctx['po_spend']:,.2f} procurement spend)",
         fill_hex="F0FDF4",
         accent_hex="65A338",
@@ -906,7 +907,7 @@ def build_docx(ctx: Dict[str, Any]) -> Path:
         ["Hyperparameter Tuning", "Optuna (Bayesian Tree-structured Parzen Estimator with early stopping)"],
         ["Inventory Simulation", "Monte Carlo Vectorized Simulator (20 stochastic seeds, non-Gaussian lead times)"],
         ["Backend REST API", "FastAPI, Uvicorn, SQLite (Async endpoints, OpenAPI 3.1 spec, ACID state persistence)"],
-        ["Frontend UI", "HTML5, Tailwind CSS, Chart.js 4.4, Lucide Icons (Responsive, zero heavy build tools)"],
+        ["Dual Frontend UI", "FastAPI Operations Dashboard (HTML5, Tailwind CSS, Chart.js 4.4) + Streamlit Replenishment Studio (Self-Service Data Upload & Modern UI)"],
         ["AI Copilot", "Google Gemini 2.5 Flash / Built-in Heuristic NLP Engine (Rule-grounded decision support)"],
         ["Testing & Quality", "Pytest (19/19 unit & integration tests passing), Flake8, Strict Type Hints"],
         ["Containerization", "Docker, Docker Compose, Multi-stage lightweight Python container"],
@@ -1130,25 +1131,29 @@ def build_docx(ctx: Dict[str, Any]) -> Path:
         "Outcome: Simulates daily physical inventory balance under strict mass-conservation laws and lead-time delays."
     )
 
-    add_sub_heading(doc, "8.4 Live Dashboard Visualizations & UI Screens")
-    add_figure(doc, ASSETS_DIR / "ui_forecasts.png", "Figure 3: Interactive Demand Forecast View with P10-P90 Confidence Ribbons")
-    add_figure(doc, ASSETS_DIR / "ui_policies.png", "Figure 4: Safety Stock Policy Cost Frontier and Service Level Tradeoffs")
-    add_figure(doc, ASSETS_DIR / "ui_po.png", "Figure 5: Autonomous Purchase Order Management with State Transitions")
-    add_figure(doc, ASSETS_DIR / "ui_copilot.png", "Figure 6: Built-in AI Analytics Copilot Answering Natural Language Inventory Queries")
-    add_figure(doc, ASSETS_DIR / "ui_censoring.png", "Figure 7: Censored Demand Reconstruction Interface Comparing Imputed vs Raw Sales")
-    add_figure(doc, ASSETS_DIR / "ui_overview.png", "Figure 8: Full Executive Overview Dashboard with Live Inventory Health KPIs")
+    add_sub_heading(doc, "8.4 Live Dashboard Visualizations & Dual UI Screens")
+    add_figure(doc, ASSETS_DIR / "ui_overview.png", "Figure 3: FastAPI Operations Dashboard — Live Real-Time Telemetry & Inventory Health KPIs")
+    add_figure(doc, ASSETS_DIR / "ui_forecasts.png", "Figure 4: Interactive Demand Forecast View with P10-P90 Confidence Ribbons")
+    add_figure(doc, ASSETS_DIR / "ui_policies.png", "Figure 5: Safety Stock Policy Cost Frontier and Service Level Tradeoffs")
+    add_figure(doc, ASSETS_DIR / "ui_po.png", "Figure 6: Autonomous Purchase Order Management with State Transitions")
+    add_figure(doc, ASSETS_DIR / "ui_copilot.png", "Figure 7: Built-in AI Analytics Copilot Answering Natural Language Inventory Queries")
+    add_figure(doc, ASSETS_DIR / "ui_censoring.png", "Figure 8: Censored Demand Reconstruction Interface Comparing Imputed vs Raw Sales")
+    add_figure(doc, ASSETS_DIR / "ui_studio_overview.png", "Figure 9: Streamlit Replenishment Studio — Self-Service Ingestion & Modern White-Card Telemetry")
+    add_figure(doc, ASSETS_DIR / "ui_studio_forecast.png", "Figure 10: Streamlit Replenishment Studio — Interactive Demand Forecasting & Uncertainty Bands")
 
     # =========================================================================
     # SECTION 9: KEY FEATURES & VISUALIZATIONS
     # =========================================================================
     add_section_heading(doc, "9.", "Key Features & Visualizations", page_break=True)
+    add_bullet(doc, "Dual Web Interface: ", "Combines a real-time FastAPI operations dashboard for enterprise execution with an interactive Streamlit Replenishment Studio for self-service analysis.")
+    add_bullet(doc, "Bring-Your-Own-Data CSV Ingestion: ", "Auto-detects and standardizes user sales columns (ds, sku, sales, quantity, price, stock, inventory) with automated missing value handling.")
+    add_bullet(doc, "Modern Visual Design System: ", "Features elevated white metric cards, pill navigation tabs, custom gradient hero banners, and responsive typography.")
     add_bullet(doc, "Probabilistic Demand Ribbons: ", "Displays p10, p50, and p90 multi-quantile bands so managers visualize demand volatility.")
     add_bullet(doc, "Cost Frontier Curve: ", "Traces holding cost vs stockout cost across service levels (70% to 99%) to identify optimal safety stock.")
     add_bullet(doc, "Autonomous PO Generator: ", "Evaluates inventory position daily against reorder points and auto-generates purchase orders.")
     add_bullet(doc, "Lifecycle State Machine: ", "Enforces strict PO transition rules (Draft -> Submitted -> Approved -> Ordered -> Delivered) with SQLite persistence.")
-    add_bullet(doc, "AI Inventory Copilot: ", "Answers complex manager queries in plain English (e.g., 'Which store has highest stockout risk?').")
+    add_bullet(doc, "AI Inventory Copilot: ", "Answers complex manager queries in plain English grounded with live operational data.")
     add_bullet(doc, "Censoring Diagnostic View: ", "Compares raw POS sales with recovered latent demand to quantify hidden stockout impact.")
-    add_bullet(doc, "Zero-Build Lightweight UI: ", "Vanilla HTML5 + Tailwind CSS + Chart.js frontend requiring no Node.js build overhead.")
 
     # =========================================================================
     # SECTION 10: FINDINGS, ANALYSIS & OUTCOMES
@@ -1160,29 +1165,27 @@ def build_docx(ctx: Dict[str, Any]) -> Path:
     )
 
     pol_summary_rows = [
-        ["Zero Buffer", "74.2%", "78.6%", "$210.50", "$6,420.00", "$6,630.50", "38"],
-        ["7-Day Cover", "89.4%", "91.2%", "$1,120.00", "$2,450.00", "$3,570.00", "18"],
-        ["Manager Heuristic", "92.1%", "93.2%", "$1,540.00", "$4,700.00", "$6,240.00", "14"],
-        ["Point Forecast + Buffer", "95.6%", "96.4%", "$1,890.00", "$1,450.00", "$3,340.00", "8"],
-        ["Quantile p90 Policy", "98.1%", "98.4%", "$2,825.00", "$1,800.00", "$4,625.00", "3"],
+        ["Manager Heuristic", "95.61%", "7.79%", "$70.76", "$2,460.41", "$2,531.17"],
+        ["Point Forecast Policy", "95.02%", "8.77%", "$57.74", "$2,770.79", "$2,828.54"],
+        ["Quantile Ordering (Restok) ★", "96.11%", "6.63%", "$73.35", "$2,111.38", "$2,184.73"],
     ]
     add_styled_table(
         doc,
-        ["Policy Strategy", "Service Level", "Fill Rate", "Holding Cost", "Stockout Cost", "Total Cost", "Stockout Days"],
+        ["Policy Strategy", "Service Level", "Stockout Rate", "Holding Cost", "Stockout Penalty", "Total Cost"],
         pol_summary_rows,
-        [1.6, 0.9, 0.8, 0.9, 0.9, 0.9, 0.87],
-        alignments=[WD_ALIGN_PARAGRAPH.LEFT] + [WD_ALIGN_PARAGRAPH.RIGHT]*6
+        [2.0, 0.95, 0.95, 0.95, 1.0, 1.02],
+        alignments=[WD_ALIGN_PARAGRAPH.LEFT] + [WD_ALIGN_PARAGRAPH.RIGHT]*5
     )
 
     add_body_p(
         doc,
         "Key Analytical Findings:\n"
-        "1. Superiority of Quantile Sizing: Sizing safety stock directly to the p90 conditional quantile reduces stockout occurrences "
-        "by 76% compared to the manager heuristic, delivering a 98.4% fill rate.\n"
+        "1. Superiority of Quantile Sizing: Quantile ordering directly optimizes safety stock to demand uncertainty, reducing stockout rates "
+        "to 6.63% while achieving the highest service level (96.11%).\n"
         "2. Cost-Asymmetric Optimization: Because stockout penalties ($1.50/unit) exceed daily holding costs ($0.05/day), holding "
         "a slight inventory buffer is financially superior to lean zero-inventory strategies.\n"
-        "3. Tangible Financial Return: The optimized replenishment engine delivers an annual operating cost saving of $1,615 (25.9%) "
-        "across the 10 evaluated series, scalable to tens of thousands of dollars across a full retail catalog."
+        "3. Tangible Financial Return: The optimized replenishment engine delivers an operating cost saving of $346.44 (13.7% reduction, from "
+        "$2,531.17 to $2,184.73) across the 20-seed Monte Carlo simulations."
     )
 
     # =========================================================================
@@ -1288,6 +1291,8 @@ def build_pdf(ctx: Dict[str, Any]) -> Path:
     ui_po_b64 = _b64_img(ASSETS_DIR / "ui_po.png")
     ui_cop_b64 = _b64_img(ASSETS_DIR / "ui_copilot.png")
     ui_cens_b64 = _b64_img(ASSETS_DIR / "ui_censoring.png")
+    ui_st_over_b64 = _b64_img(ASSETS_DIR / "ui_studio_overview.png")
+    ui_st_fore_b64 = _b64_img(ASSETS_DIR / "ui_studio_forecast.png")
 
     m_df = ctx["metrics_df"]
     pt_trs = "".join(
@@ -1573,7 +1578,7 @@ def build_pdf(ctx: Dict[str, Any]) -> Path:
         <div class="running-header">
           <img src="{logo_b64}" alt="Cronus Consultants Logo" />
           <div class="running-header-meta">
-            <strong>RESTOK</strong> &mdash; Project Owner: <strong>Sayan Senapati</strong><br/>
+            <strong>RESTOK</strong> &mdash; Project Owner: <strong>Sayan Senapati</strong> (Roll: NIT/2025/0814)<br/>
             Cronus Consultants Internship Programme (November 2026)
           </div>
         </div>
@@ -1596,7 +1601,7 @@ def build_pdf(ctx: Dict[str, Any]) -> Path:
 
         <p class="submitted-by">Submitted by:</p>
         <p class="student-name">Sayan Senapati</p>
-        <p class="student-meta">Registration No.: CRONUS-AI-2026-842 &nbsp;|&nbsp; Project ID: RESTOK-ML-2026</p>
+        <p class="student-meta">Roll No.: NIT/2025/0814 &nbsp;|&nbsp; Role: Project Owner &amp; Lead Developer</p>
         <p class="student-meta">Data Science &amp; Machine Learning &bull; Cronus Consultants Internship Programme &bull; November 2026</p>
 
         <table class="data-tbl">
@@ -1608,9 +1613,9 @@ def build_pdf(ctx: Dict[str, Any]) -> Path:
           </thead>
           <tbody>
             <tr><td><strong>Document Type</strong></td><td>Industry-Standard Technical Project Report</td></tr>
-            <tr><td><strong>Technology Stack</strong></td><td>Python 3.12 &bull; LightGBM &bull; Optuna &bull; FastAPI &bull; SQLite &bull; Chart.js &bull; Docker</td></tr>
+            <tr><td><strong>Technology Stack</strong></td><td>Python 3.12 / 3.14 &bull; LightGBM &bull; Optuna &bull; FastAPI &bull; Streamlit &bull; SQLite &bull; Docker</td></tr>
             <tr><td><strong>Domain</strong></td><td>Supply Chain Analytics &amp; Autonomous Inventory Replenishment</td></tr>
-            <tr><td><strong>Primary Goal</strong></td><td>Quantile Demand Forecasting, Cost-Optimal Safety Stock &amp; Autonomous PO Lifecycle</td></tr>
+            <tr><td><strong>Primary Goal</strong></td><td>Multi-Quantile Demand Forecasting, Cost-Optimal Safety Stock, PO Lifecycle &amp; Self-Service Studio</td></tr>
             <tr><td><strong>Best Model Performance</strong></td><td><strong>35.46% WAPE</strong> (LightGBM Tweedie, Quantile Ordering Policy: $2,185 Total Cost, 96.1% Fill Rate)</td></tr>
             <tr><td><strong>Year of Submission</strong></td><td>2026</td></tr>
           </tbody>
@@ -1621,15 +1626,15 @@ def build_pdf(ctx: Dict[str, Any]) -> Path:
         <h2 class="sec-head">Certificate of Project Completion &amp; Mentorship Approval</h2>
         <p>
           This is to certify that the technical project report entitled <strong>"RESTOK: AI/ML Inventory Optimization &amp; Autonomous
-          Replenishment Engine"</strong> submitted by <strong>Sayan Senapati</strong> (Registration No. CRONUS-AI-2026-842) in partial fulfillment
+          Replenishment Engine"</strong> submitted by <strong>Sayan Senapati</strong> (Roll No. NIT/2025/0814) in partial fulfillment
           of the requirements for the Engineering Internship Programme at <strong>Cronus Consultants</strong> is an authentic record of
           original engineering research and implementation carried out by him under my guidance and supervision.
         </p>
         <p>
           The project demonstrates end-to-end technical competence, comprising retail demand data ingestion, censored-demand
           reconstruction, multi-quantile gradient-boosted tree modeling, 20-seed Monte Carlo newsvendor simulation, autonomous
-          purchase order orchestration, and production REST API deployment with an interactive analytics dashboard. The empirical
-          results (35.46% WAPE, $4,625 policy cost, 98.4% fill rate) have been rigorously verified and meet professional
+          purchase order orchestration, self-service data upload studio, and production REST API deployment with interactive analytics dashboards. The empirical
+          results (35.46% WAPE, $2,185 policy cost, 96.1% fill rate) have been rigorously verified and meet professional
           industry standards.
         </p>
         <p>
@@ -1669,7 +1674,8 @@ def build_pdf(ctx: Dict[str, Any]) -> Path:
           </div>
           <div class="sig-name">Sayan Senapati</div>
           <div class="sig-meta">
-            Project Owner &amp; Lead Developer (Data Science Intern)<br/>
+            Project Owner &amp; Lead Developer<br/>
+            Roll No.: NIT/2025/0814<br/>
             Cronus Consultants<br/>
             Date: 12th November 2026 &nbsp;|&nbsp; Place: Kolkata, India
           </div>
@@ -1692,9 +1698,9 @@ def build_pdf(ctx: Dict[str, Any]) -> Path:
             <tr><th>Role</th><th>Authorized Identity</th><th>Official Status</th></tr>
           </thead>
           <tbody>
-            <tr><td><strong>Candidate / Project Owner</strong></td><td>Sayan Senapati</td><td>Verified &amp; Submitted (12 / 11 / 2026)</td></tr>
+            <tr><td><strong>Candidate / Project Owner (NIT/2025/0814)</strong></td><td>Sayan Senapati</td><td>Verified &amp; Submitted (12 / 11 / 2026)</td></tr>
             <tr><td><strong>Technical Mentor &amp; Guide</strong></td><td>Sayantani Sarkar</td><td>Reviewed &amp; Approved (13 / 11 / 2026)</td></tr>
-            <tr><td><strong>Hosting &amp; Deployment</strong></td><td>Production Release (Docker)</td><td>Scheduled Deployment: 17th November 2026</td></tr>
+            <tr><td><strong>Hosting &amp; Deployment</strong></td><td>Production Release (Docker &amp; Cloud)</td><td>Scheduled Deployment: 17th November 2026</td></tr>
           </tbody>
         </table>
 
@@ -1749,10 +1755,11 @@ def build_pdf(ctx: Dict[str, Any]) -> Path:
 
         <div class="callout green">
           <div class="callout-title">Executive Scorecard &mdash; Verified Empirical Outcomes</div>
-          &bull; Demand Forecasting WAPE: <strong>35.46%</strong> (vs 37.6% Moving Average baseline, significant error reduction)<br/>
-          &bull; Inventory Policy Total Cost: <strong>$2,185</strong> (Quantile Ordering vs $2,531 Manager Heuristic, 13.7% cost savings)<br/>
-          &bull; Customer Order Fill Rate: <strong>96.1%</strong> (Quantile Ordering vs 95.6% Heuristic Baseline)<br/>
-          &bull; Stockout Occurrence Rate: Reduced to <strong>6.6%</strong> (vs 7.8% Manager Heuristic) across 20-seed stochastic simulations<br/>
+          &bull; Demand Forecasting WAPE: <strong>35.46%</strong> (vs 37.61% Moving Average baseline, outperforms classical statistics)<br/>
+          &bull; Inventory Policy Total Cost: <strong>$2,185</strong> (Quantile Ordering vs $2,531 Manager Heuristic, 13.7% operational cost savings)<br/>
+          &bull; Customer Order Fill Rate: <strong>96.1%</strong> (vs 95.6% Heuristic Baseline)<br/>
+          &bull; Stockout Occurrence Rate: Reduced to <strong>6.63%</strong> (vs 7.8% Manager Heuristic) across 20-seed stochastic simulations<br/>
+          &bull; Dual UI Architecture: <strong>FastAPI Operations Dashboard</strong> + <strong>Streamlit Replenishment Studio</strong><br/>
           &bull; Autonomous PO Pipeline: <strong>{ctx['po_total']}</strong> live purchase orders generated (${ctx['po_spend']:,.2f} procurement spend)
         </div>
 
@@ -1808,7 +1815,7 @@ def build_pdf(ctx: Dict[str, Any]) -> Path:
             <tr><td><strong>Hyperparameter Tuning</strong></td><td>Optuna (Bayesian Tree-structured Parzen Estimator with early stopping)</td></tr>
             <tr><td><strong>Inventory Simulation</strong></td><td>Monte Carlo Vectorized Simulator (20 stochastic seeds, non-Gaussian lead times)</td></tr>
             <tr><td><strong>Backend REST API</strong></td><td>FastAPI, Uvicorn, SQLite (Async endpoints, OpenAPI 3.1 spec, ACID state persistence)</td></tr>
-            <tr><td><strong>Frontend Interface</strong></td><td>HTML5, Tailwind CSS, Chart.js 4.4, Lucide Icons (Responsive, zero heavy build tools)</td></tr>
+            <tr><td><strong>Dual Frontend Interface</strong></td><td>FastAPI Operations Dashboard (HTML5, Tailwind CSS, Chart.js 4.4) + Streamlit Replenishment Studio (Self-Service Data Upload &amp; Modern UI)</td></tr>
             <tr><td><strong>AI Analytics Copilot</strong></td><td>Google Gemini 2.5 Flash / Built-in Heuristic NLP Engine (Rule-grounded decision support)</td></tr>
             <tr><td><strong>Quality &amp; Verification</strong></td><td>Pytest (19/19 unit &amp; integration tests passing), Flake8, Strict Type Hints</td></tr>
             <tr><td><strong>Containerization</strong></td><td>Docker, Docker Compose, Multi-stage lightweight Python container</td></tr>
@@ -1908,46 +1915,59 @@ def build_pdf(ctx: Dict[str, Any]) -> Path:
         <p><em>Outcome: Simulates daily physical inventory balance under strict mass-conservation laws and lead-time delays.</em></p>
 
         <div class="fig">
-          <img src="{ui_fore_b64}" alt="UI Forecasts" />
-          <div class="fig-cap">Figure 3: Interactive Demand Forecast View with P10-P90 Confidence Ribbons</div>
+          <img src="{ui_over_b64}" alt="UI Overview Dashboard" />
+          <div class="fig-cap">Figure 3: FastAPI Operations Dashboard &mdash; Live Real-Time Telemetry &amp; Inventory Health KPIs</div>
         </div>
 
         <div class="page-break"></div>
         <div class="fig">
+          <img src="{ui_fore_b64}" alt="UI Forecasts" />
+          <div class="fig-cap">Figure 4: Interactive Demand Forecast View with P10-P90 Confidence Ribbons</div>
+        </div>
+
+        <div class="fig">
           <img src="{ui_pol_b64}" alt="UI Policies" />
-          <div class="fig-cap">Figure 4: Safety Stock Policy Cost Frontier and Service Level Tradeoffs</div>
+          <div class="fig-cap">Figure 5: Safety Stock Policy Cost Frontier and Service Level Tradeoffs</div>
         </div>
 
         <div class="fig">
           <img src="{ui_po_b64}" alt="UI PO Management" />
-          <div class="fig-cap">Figure 5: Autonomous Purchase Order Management with State Transitions</div>
+          <div class="fig-cap">Figure 6: Autonomous Purchase Order Management with State Transitions</div>
         </div>
 
         <div class="fig">
           <img src="{ui_cop_b64}" alt="UI AI Copilot" />
-          <div class="fig-cap">Figure 6: Built-in AI Analytics Copilot Answering Natural Language Inventory Queries</div>
+          <div class="fig-cap">Figure 7: Built-in AI Analytics Copilot Answering Natural Language Inventory Queries</div>
         </div>
 
         <div class="page-break"></div>
         <div class="fig">
           <img src="{ui_cens_b64}" alt="UI Censoring" />
-          <div class="fig-cap">Figure 7: Censored Demand Reconstruction Interface Comparing Imputed vs Raw Sales</div>
+          <div class="fig-cap">Figure 8: Censored Demand Reconstruction Interface Comparing Imputed vs Raw Sales</div>
         </div>
 
         <div class="fig">
-          <img src="{ui_over_b64}" alt="UI Overview Dashboard" />
-          <div class="fig-cap">Figure 8: Full Executive Overview Dashboard with Live Inventory Health KPIs</div>
+          <img src="{ui_st_over_b64}" alt="Streamlit Replenishment Studio" />
+          <div class="fig-cap">Figure 9: Streamlit Replenishment Studio &mdash; Self-Service Ingestion &amp; Modern White-Card Telemetry</div>
+        </div>
+
+        <div class="fig">
+          <img src="{ui_st_fore_b64}" alt="Streamlit Replenishment Studio Forecast" />
+          <div class="fig-cap">Figure 10: Streamlit Replenishment Studio &mdash; Interactive Demand Forecasting &amp; Uncertainty Bands</div>
         </div>
 
         <!-- SECTION 9 -->
         <h2 class="sec-head"><span class="num">9.</span>Key Features &amp; Visualizations</h2>
         <ul>
+          <li><strong>Dual Web Interface Architecture:</strong> Combines a real-time FastAPI operations dashboard for enterprise execution with an interactive Streamlit Replenishment Studio for self-service analysis.</li>
+          <li><strong>Bring-Your-Own-Data CSV Ingestion:</strong> Auto-detects and standardizes user sales columns (ds, sku, sales, quantity, price, stock, inventory) with automated missing value handling.</li>
+          <li><strong>Modern Visual Design System:</strong> Features elevated white metric cards, pill navigation tabs, custom gradient hero banners, and responsive typography.</li>
           <li><strong>Probabilistic Demand Ribbons:</strong> Interactive Chart.js bands for p10, p50, and p90 quantiles.</li>
           <li><strong>Policy Cost Frontier:</strong> Traces holding vs stockout penalties to identify the cost-optimal safety stock point.</li>
           <li><strong>Autonomous PO Generator:</strong> Auto-creates purchase orders when inventory positions breach dynamic reorder points.</li>
-          <li><strong>Persistent State Machine:</strong> Draft -> Approved -> Ordered -> Delivered with SQLite ACID storage.</li>
+          <li><strong>Persistent State Machine:</strong> Draft -&gt; Approved -&gt; Ordered -&gt; Delivered with SQLite ACID storage.</li>
           <li><strong>Natural Language Copilot:</strong> Plain-English answers to inventory health, stockout risk, and spend questions.</li>
-          <li><strong>Zero-Build Frontend:</strong> Pure HTML5, Tailwind CSS, and Chart.js 4.4 with instant hot-reloading.</li>
+          <li><strong>Censoring Diagnostic View:</strong> Compares raw POS sales with recovered latent demand to quantify hidden stockout impact.</li>
         </ul>
 
         <!-- SECTION 10 -->

@@ -38,20 +38,90 @@ st.set_page_config(
 
 CSS = """
 <style>
-.block-container { padding-top: 1.6rem; max-width: 1180px; }
-h1, h2, h3 { color: #0f172a; }
+/* Page shell */
+.block-container { padding-top: 1.2rem; padding-bottom: 3rem; max-width: 1180px; }
+h1, h2, h3, h4 { color: #0f172a; letter-spacing: -0.01em; }
+h2 { margin-top: 0.4rem; }
+h3 { font-size: 1.35rem; margin-top: 1.2rem; }
+h4 { font-size: 1.1rem; margin-top: 1.2rem; }
+
+/* Clean app shell: hide only the cloud Deploy button */
+[data-testid="stAppDeployButton"] { display: none !important; }
+[data-testid="stHeader"] { background: transparent; }
+[data-testid="stAppViewContainer"] { background: #ffffff; }
+
+/* Sidebar */
+[data-testid="stSidebar"] { background: #f8fafc; border-right: 1px solid #e2e8f0; }
+[data-testid="stSidebarCollapseButton"] { visibility: visible !important; opacity: 1 !important; }
+[data-testid="stSidebarCollapseButton"] button { color: #475569; }
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h3 {
+    font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em;
+    color: #64748b; margin: 1rem 0 0.4rem 0;
+}
+
+/* Metric cards */
 [data-testid="stMetric"] {
-    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
-    padding: 0.8rem 1rem;
+    background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px;
+    padding: 0.9rem 1rem; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 [data-testid="stMetricValue"] { font-size: 1.55rem; color: #0f172a; }
-[data-testid="stMetricLabel"] { color: #475569; }
-.hero {
-    background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #6366f1;
-    padding: 1.15rem 1.4rem; border-radius: 10px; margin-bottom: 1rem;
+[data-testid="stMetricLabel"] { color: #64748b; font-size: 0.82rem; }
+
+/* Tabs as pills */
+[data-testid="stTabs"] [role="tablist"] {
+    gap: 0.3rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.35rem;
 }
-.hero h1 { color: #0f172a; font-size: 1.5rem; margin: 0 0 0.25rem 0; }
+[data-testid="stTabs"] [data-testid="stTab"] {
+    height: 2.35rem; padding: 0 0.9rem; border-radius: 8px;
+    color: #475569; background: transparent;
+}
+[data-testid="stTabs"] [data-testid="stTab"][aria-selected="true"] {
+    color: #4338ca; background: #eef2ff; font-weight: 600;
+}
+[data-testid="stTabs"] .react-aria-SelectionIndicator { display: none !important; }
+
+/* Buttons and inputs */
+.stButton > button, .stDownloadButton > button {
+    border-radius: 9px; border-color: #cbd5e1; min-height: 2.6rem;
+}
+.stButton > button[kind="primary"] { border-radius: 9px; font-weight: 600; }
+[data-testid="stFileUploader"] { border-radius: 10px; }
+
+/* Sidebar brand */
+.brand { padding: 0.1rem 0 0.6rem 0; border-bottom: 1px solid #e2e8f0; }
+.brand strong { display: block; font-size: 1.1rem; color: #0f172a; letter-spacing: -0.02em; }
+.brand span { display: block; font-size: 0.78rem; color: #64748b; margin-top: 0.1rem; }
+
+/* Tables */
+[data-testid="stDataFrame"] { border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
+
+/* Chat */
+[data-testid="stChatMessage"] {
+    background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px;
+    padding: 0.35rem 0.6rem; margin-bottom: 0.4rem;
+}
+[data-testid="stChatInput"] textarea { border-radius: 10px; }
+
+/* Hero */
+.hero {
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid #e2e8f0; border-left: 4px solid #6366f1;
+    padding: 1.2rem 1.4rem; border-radius: 12px; margin-bottom: 1.2rem;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+.hero h1 { color: #0f172a; font-size: 1.85rem; margin: 0 0 0.25rem 0; }
 .hero p { color: #475569; margin: 0; font-size: 0.95rem; }
+.eyebrow {
+    display: inline-block; font-size: 0.68rem; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase; color: #6366f1;
+    margin-bottom: 0.4rem;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.8rem; }
+.chip {
+    background: #eef2ff; color: #4338ca; border: 1px solid #e0e7ff;
+    font-size: 0.76rem; font-weight: 600; padding: 0.2rem 0.6rem;
+    border-radius: 999px; white-space: nowrap;
+}
 .hint { color: #64748b; font-size: 0.84rem; }
 </style>
 """
@@ -93,21 +163,36 @@ def _load_project_data() -> dict[str, pd.DataFrame]:
 # Charts
 # --------------------------------------------------------------------------- #
 def _forecast_chart(history: pd.DataFrame, forecast: pd.DataFrame) -> alt.LayerChart:
-    x = alt.X("date:T", title=None)
+    unit_scale = alt.Scale(domainMin=0, nice=True)
+    x = alt.X("date:T", title=None, axis=alt.Axis(grid=False, labelColor="#64748b"))
+    y = alt.Y(
+        "lower:Q",
+        title="Units",
+        scale=unit_scale,
+        axis=alt.Axis(grid=True, gridColor="#eef2f7", gridDash=[3, 3], labelColor="#64748b"),
+    )
     band = (
         alt.Chart(forecast)
         .mark_area(color="#6366f1", opacity=0.15)
-        .encode(x=x, y=alt.Y("lower:Q", title="Units"), y2="upper:Q")
+        .encode(x=x, y=y, y2="upper:Q")
     )
     forecast_line = (
         alt.Chart(forecast)
         .mark_line(color="#6366f1", strokeWidth=2.2, strokeDash=[6, 4])
-        .encode(x=x, y="forecast:Q", tooltip=["date:T", "forecast:Q", "lower:Q", "upper:Q"])
+        .encode(
+            x=x,
+            y=alt.Y("forecast:Q", scale=unit_scale),
+            tooltip=["date:T", "forecast:Q", "lower:Q", "upper:Q"],
+        )
     )
     history_line = (
         alt.Chart(history)
         .mark_line(color="#334155", strokeWidth=2)
-        .encode(x=x, y="units_sold:Q", tooltip=["date:T", "units_sold:Q"])
+        .encode(
+            x=x,
+            y=alt.Y("units_sold:Q", scale=unit_scale),
+            tooltip=["date:T", "units_sold:Q"],
+        )
     )
     divider = (
         alt.Chart(pd.DataFrame({"date": [forecast["date"].min()]}))
@@ -117,7 +202,6 @@ def _forecast_chart(history: pd.DataFrame, forecast: pd.DataFrame) -> alt.LayerC
     return (
         (band + forecast_line + history_line + divider)
         .properties(height=330)
-        .configure_axis(grid=False, labelColor="#475569", titleColor="#475569")
         .configure_view(stroke=None)
         .interactive()
     )
@@ -190,13 +274,6 @@ def _censoring_chart(censoring: pd.DataFrame, column: str, title: str) -> alt.Ch
 
 
 # --------------------------------------------------------------------------- #
-# Sidebar
-# --------------------------------------------------------------------------- #
-def open_browser_hint() -> None:
-    st.sidebar.caption("Tip: run `./run.sh` to open this app automatically.")
-
-
-# --------------------------------------------------------------------------- #
 # Overview
 # --------------------------------------------------------------------------- #
 def _top_urgent(table: pd.DataFrame) -> pd.DataFrame:
@@ -236,10 +313,15 @@ def _project_kpis() -> None:
         "independent of the data selected above."
     )
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Model WAPE", f"{model_wape:.1f}%", f"{-improvement:.1f}% vs baseline")
+    c1.metric(
+        "Model WAPE",
+        f"{model_wape:.1f}%",
+        f"{-improvement:.1f}% vs baseline",
+        delta_color="inverse",
+    )
     c2.metric("Stockout reduction", f"{stock_reduction:.1f}%", "quantile vs heuristic")
     c3.metric("Cost reduction", f"{cost_reduction:.1f}%", "quantile vs heuristic")
-    c4.metric("Series studied", "300", "5 stores x 60 SKUs")
+    c4.metric("Series studied", "300", "5 stores x 60 SKUs", delta_color="off")
 
 
 def _overview_tab(result: AnalysisResult | None, report: DataReport | None) -> None:
@@ -269,7 +351,9 @@ def _overview_tab(result: AnalysisResult | None, report: DataReport | None) -> N
     if report is not None:
         st.caption(
             f"{report.series:,} SKUs · {report.rows_out:,} rows · "
-            f"{(report.date_max - report.date_min).days + 1:,} days of history"
+            f"{(report.date_max - report.date_min).days + 1:,} days of history · "
+            f"{result.metrics['horizon']}-day forecast · "
+            f"{result.metrics['service_level']:.0%} in-stock target"
         )
 
     if urgent.empty:
@@ -291,6 +375,9 @@ def _overview_tab(result: AnalysisResult | None, report: DataReport | None) -> N
     with left:
         st.markdown(f"#### Highest-priority SKU · {focus['store_id']} / {focus['item_id']}")
         st.altair_chart(_forecast_chart(focus_hist, focus_fc), width="stretch")
+        st.caption(
+            "Solid line: actual sales | dashed line: forecast | shaded band: uncertainty range."
+        )
 
     with right:
         st.markdown("#### Needs attention now")
@@ -298,7 +385,15 @@ def _overview_tab(result: AnalysisResult | None, report: DataReport | None) -> N
             ["store_id", "item_id", "recommended_qty", "urgency", "order_cost"]
         ].copy()
         top.columns = ["Store", "Item", "Order qty", "Priority", "Cost"]
-        st.dataframe(top, width="stretch", hide_index=True)
+        st.dataframe(
+            top,
+            width="stretch",
+            hide_index=True,
+            column_config={
+                "Order qty": st.column_config.NumberColumn("Order qty", format="%d"),
+                "Cost": st.column_config.NumberColumn("Cost", format="$%.2f"),
+            },
+        )
 
         if table["on_hand_assumed"].any():
             st.caption(
@@ -325,7 +420,18 @@ def _csv_help() -> None:
         )
 
 
-def _data_tab(clean_df: pd.DataFrame | None, report: DataReport | None) -> None:
+def _data_tab(
+    clean_df: pd.DataFrame | None,
+    report: DataReport | None,
+    demo_mode: bool,
+) -> None:
+    if demo_mode:
+        st.caption("Using the demo dataset. Switch to **Upload my CSV** in the sidebar to use your own file.")
+    elif clean_df is None:
+        st.caption("Upload a CSV in the sidebar to begin, or switch back to the demo data.")
+    else:
+        st.caption("Using your uploaded CSV. You can change the data source in the sidebar.")
+
     if clean_df is None or report is None:
         st.info("Choose the demo or upload a CSV in the sidebar to begin.")
         _csv_help()
@@ -377,18 +483,33 @@ def _forecast_tab(result: AnalysisResult) -> None:
     metrics = result.metrics
     wape = metrics["wape"]
 
+    stores = sorted(result.forecasts["store_id"].unique())
+    store_col, item_col = st.columns(2)
+    store = store_col.selectbox("Store", stores)
+    items = sorted(
+        result.forecasts[result.forecasts["store_id"] == store]["item_id"].unique()
+    )
+    item = item_col.selectbox("Item", items)
+
+    series_fc = result.forecasts[
+        (result.forecasts["store_id"] == store) & (result.forecasts["item_id"] == item)
+    ].sort_values("date")
+    series_hist = result.history[
+        (result.history["store_id"] == store) & (result.history["item_id"] == item)
+    ].sort_values("date").tail(60)
+
     c1, c2, c3 = st.columns(3)
     c1.metric(
-        "Forecast error",
+        "Model error",
         "n/a" if wape is None else f"{wape * 100:.0f}%",
-        help="WAPE on the held-out last days. Lower is better.",
+        help="WAPE on held-out days across all SKUs. Lower is better.",
     )
     c2.metric(
         "Expected demand",
-        f"{result.forecasts['forecast'].sum():,.0f}",
-        help=f"Total units over the next {metrics['horizon']} days.",
+        f"{series_fc['forecast'].sum():,.0f}",
+        help=f"Selected SKU, next {metrics['horizon']} days.",
     )
-    c3.metric("Average per day", f"{result.forecasts['forecast'].mean():.1f}")
+    c3.metric("Average per day", f"{series_fc['forecast'].mean():.1f}")
 
     if wape is None:
         st.info(
@@ -401,21 +522,13 @@ def _forecast_tab(result: AnalysisResult) -> None:
             "adding more history, price or promotion data."
         )
 
-    stores = sorted(result.forecasts["store_id"].unique())
-    store = st.selectbox("Store", stores)
-    items = sorted(
-        result.forecasts[result.forecasts["store_id"] == store]["item_id"].unique()
-    )
-    item = st.selectbox("Item", items)
-
-    series_fc = result.forecasts[
-        (result.forecasts["store_id"] == store) & (result.forecasts["item_id"] == item)
-    ].sort_values("date")
-    series_hist = result.history[
-        (result.history["store_id"] == store) & (result.history["item_id"] == item)
-    ].sort_values("date").tail(60)
-
     st.altair_chart(_forecast_chart(series_hist, series_fc), width="stretch")
+    caption = (
+        "Solid line: actual sales | dashed line: forecast | shaded band: uncertainty range."
+    )
+    if series_fc["upper"].max() > 3 * max(float(series_fc["forecast"].max()), 1.0):
+        caption += " Wide bands are expected for low-volume, intermittent SKUs."
+    st.caption(caption)
 
     with st.expander("Daily forecast and download"):
         display = series_fc[["date", "forecast", "lower", "upper"]].copy()
@@ -648,6 +761,7 @@ def _copilot_tab() -> None:
                 st.caption(f"Engine: {message['engine']}")
 
     if not st.session_state["copilot"]:
+        st.markdown("#### Try a question")
         examples = [
             "What is our model WAPE and how does it compare to the baseline?",
             "Compare quantile ordering with the manager heuristic.",
@@ -674,18 +788,38 @@ def _copilot_tab() -> None:
 # --------------------------------------------------------------------------- #
 # Main
 # --------------------------------------------------------------------------- #
-def main() -> None:
+def _hero(
+    demo_mode: bool,
+    clean_df: pd.DataFrame | None,
+    report: DataReport | None,
+) -> None:
+    source = "Demo data" if demo_mode else ("Uploaded CSV" if clean_df is not None else "No data")
+    chips = [source]
+    if report is not None:
+        chips.append(f"{report.series} SKUs")
+        chips.append(f"{(report.date_max - report.date_min).days + 1} days")
+        chips.append(f"{report.rows_out:,} rows")
+    chip_html = "".join(f'<span class="chip">{chip}</span>' for chip in chips)
     st.markdown(
-        """
+        f"""
 <div class="hero">
+  <span class="eyebrow">Retail replenishment</span>
   <h1>Restok</h1>
   <p>Demand forecasting, replenishment planning and supply-chain insights
   from your own sales data.</p>
+  <div class="chips">{chip_html}</div>
 </div>
 """,
         unsafe_allow_html=True,
     )
 
+
+def main() -> None:
+    st.sidebar.markdown(
+        '<div class="brand"><strong>Restok</strong>'
+        '<span>Replenishment Studio</span></div>',
+        unsafe_allow_html=True,
+    )
     st.sidebar.markdown("### Data")
     source = st.sidebar.radio(
         "Data source",
@@ -707,6 +841,7 @@ def main() -> None:
 
     clean_df: pd.DataFrame | None = None
     report: DataReport | None = None
+    load_error: str | None = None
 
     if demo_mode:
         try:
@@ -714,7 +849,7 @@ def main() -> None:
             if st.session_state.get("result_source") != "demo":
                 st.session_state["auto_run"] = True
         except Exception as exc:
-            st.error(str(exc))
+            load_error = str(exc)
     elif uploaded is not None:
         try:
             clean_df, report = clean_sales_data(load_csv_bytes(uploaded.getvalue()))
@@ -724,7 +859,7 @@ def main() -> None:
                 st.session_state["auto_run"] = True
         except ValueError as exc:
             st.session_state.pop("result", None)
-            st.error(str(exc))
+            load_error = str(exc)
 
     defaults = infer_defaults(clean_df) if clean_df is not None else infer_defaults(pd.DataFrame())
     st.sidebar.markdown("### Settings")
@@ -761,6 +896,10 @@ def main() -> None:
         shelf_life=int(round(defaults["shelf_life"])),
     )
 
+    _hero(demo_mode, clean_df, report)
+    if load_error:
+        st.error(load_error)
+
     auto_run = st.session_state.pop("auto_run", False)
     if (run_requested or auto_run) and clean_df is not None:
         with st.spinner("Running forecast..."):
@@ -789,7 +928,7 @@ def main() -> None:
     with tabs[0]:
         _overview_tab(result, report)
     with tabs[1]:
-        _data_tab(clean_df, report)
+        _data_tab(clean_df, report, demo_mode)
     with tabs[2]:
         if result is None:
             st.info("Run an analysis first.")
