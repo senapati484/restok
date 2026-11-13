@@ -41,8 +41,8 @@
                   [Phase 8: Policy Engine]
            Manager vs Point vs Quantile Reorder
                               |
-                 [Phase 9: FastAPI & Web UI]
-           Interactive Dashboard & PO Approvals
+                  [Phase 9: FastAPI & Web UI]            [Streamlit Studio]
+            Interactive Dashboard & PO Approvals    Bring-your-own-data app
 ```
 
 ---
@@ -57,15 +57,16 @@ All models are evaluated on an out-of-time 14-day expanding test set (`d_1928` t
 | **Baseline: Naive Lag-14** | 43.75% | 7.06 | 4.75 | Reference |
 | **Baseline: 28-day Rolling Mean** | 37.61% | 6.02 | 4.09 | Historical anchor |
 | **Baseline: 7-day Rolling Mean** | 38.10% | 6.10 | 4.14 | Production baseline |
-| **LightGBM Tweedie (Point)** | **34.91%** | **5.80** | **3.87** | **Beats 7-day mean by 3.19%** |
+| **Prophet Additive Decomposition** | 37.28% | 5.95 | 4.05 | Seasonal benchmark |
+| **LightGBM Tweedie (Point)** | **35.46%** | **5.74** | **3.85** | **Beats 7-day mean by 2.64 pts (6.93% rel.)** |
 
 ### B. Empirical Quantile Coverage
 Quantiles calibrated via conformal validation residuals:
-- $\tau = 0.50 \to 39.29\%$
-- $\tau = 0.75 \to 65.10\%$
-- $\tau = 0.85 \to 77.33\%$
-- $\tau = 0.90 \to 83.29\%$
-- $\tau = 0.95 \to \mathbf{92.57\%}$ (Within 2.4 points of target)
+- $\tau = 0.50 \to 40.95\%$
+- $\tau = 0.75 \to 66.83\%$
+- $\tau = 0.85 \to 79.45\%$
+- $\tau = 0.90 \to 82.36\%$
+- $\tau = 0.95 \to \mathbf{91.67\%}$ (Within 3.3 points of target)
 
 ### C. Phase 7 Censoring Study (Ground Truth Demand Recovery)
 When customer demand exceeds on-hand stock, sales are censored. Training models on censored sales creates a destructive under-forecasting bias:
@@ -114,6 +115,60 @@ Open **[http://localhost:8000](http://localhost:8000)** in your browser.
 make docker-up # or: docker compose up --build
 ```
 Open **[http://localhost:8000](http://localhost:8000)**.
+
+### Option C: Streamlit Replenishment Studio (bring your own data)
+A separate, easier-to-follow app for using Restok on **your own sales file**:
+
+```bash
+./run.sh        # same as: make app / streamlit run streamlit_app.py
+```
+Open **[http://localhost:8501](http://localhost:8501)**.
+
+The Studio works out of the box with a bundled M5 sample. Switch the sidebar to
+**Upload my CSV** to analyse your own data. The file format is intentionally simple —
+one row per **store × item × day**:
+
+| Column | Required | Meaning |
+|---|---|---|
+| `date` | Yes | Sales date (`YYYY-MM-DD`) |
+| `item_id` | Yes | SKU / product identifier |
+| `units_sold` | Yes | Units sold that day |
+| `store_id` | – | Store identifier (defaults to `STORE_1`) |
+| `sell_price` | – | Selling price (order value estimates) |
+| `unit_cost` | – | Cost per unit (order value estimates) |
+| `on_hand` | – | Current stock (otherwise assumed from demand) |
+| `lead_time` | – | Supplier lead time in days |
+| `case_pack` | – | Minimum order / case size |
+| `is_promotion` | – | `1` on promotional days |
+| `shelf_life` | – | Shelf life in days |
+
+Common aliases such as `ds`, `sku`, `sales`, `quantity`, `price`, `stock` and
+`inventory` are auto-detected. A downloadable template is available inside the app
+and on the first tab of the Studio.
+
+What the Studio does:
+1. **Data** — validates and cleans your file, shows exactly what was mapped/merged.
+2. **Forecast** — LightGBM Tweedie demand forecast per store × item with a 90%
+   uncertainty band, plus a hold-out WAPE accuracy check. Falls back to a
+   weekly-average forecast when there is less than ~4 weeks of history.
+3. **Replenish** — converts the forecast into an editable purchase-order plan using
+   reorder point, safety stock, lead time, review period and case packs. Export as CSV.
+4. **How it works** — plain-language explanation of every formula.
+
+---
+
+### One-command runner
+
+`run.sh` works from any directory and picks the project virtual environment automatically:
+
+```bash
+./run.sh            # start the Streamlit app (default)   http://localhost:8501
+./run.sh server     # start the FastAPI API + dashboard   http://localhost:8000
+./run.sh test       # run the automated test suite
+./run.sh install    # create .venv and install dependencies
+./run.sh pipeline   # rebuild data/models, then start the app
+./run.sh help       # list all modes
+```
 
 ---
 

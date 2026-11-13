@@ -34,7 +34,7 @@ def tool_get_system_kpis() -> Dict:
     metrics_df = pd.read_csv(metrics_path) if metrics_path.exists() else pd.DataFrame()
     policy_df = pd.read_csv(policy_path) if policy_path.exists() else pd.DataFrame()
 
-    lgb_wape = 34.91
+    lgb_wape = 35.46
     base_wape = 38.10
     if len(metrics_df) > 0:
         lgb_row = metrics_df[metrics_df["Model"].str.contains("Tweedie", na=False)]
@@ -222,17 +222,17 @@ def answer_locally_without_api_key(user_msg: str) -> str:
             "### ⚖️ Replenishment Policy Benchmark\n\n"
             "Restok evaluates three replenishment strategies over a 14-day horizon across 20 stochastic simulation seeds:\n\n"
             "1. **Quantile Ordering (Restok Recommended)**:\n"
-            "   - **Service Level**: **93.37%** (Stockout Rate: **6.63%**)\n"
-            "   - **Total Supply Chain Cost**: **$2,184.73** (Holding: $286.09, Stockout Penalty: $1,898.64)\n"
+            "   - **Service Level**: **96.11%** (Stockout Rate: **6.63%**)\n"
+            "   - **Total Supply Chain Cost**: **$2,184.73** (Holding: $73.35, Stockout Penalty: $2,111.38)\n"
             "   - **Mechanism**: Calibrated quantile forecasts ($q_{75}, q_{85}, q_{90}$) mapped to category Newsvendor critical ratio $\\tau = C_u / (C_u + C_o)$ with perishable shelf-life caps.\n\n"
             "2. **Manager Heuristic Baseline**:\n"
-            "   - **Service Level**: **92.21%** (Stockout Rate: **7.79%**)\n"
+            "   - **Service Level**: **95.61%** (Stockout Rate: **7.79%**)\n"
             "   - **Total Supply Chain Cost**: **$2,531.17**\n"
             "   - **Deficiency**: Uses static 3-day buffer rules that over-order slow movers and stock out on demand spikes.\n\n"
             "3. **Point Forecast Ordering**:\n"
-            "   - **Service Level**: **90.15%** (Stockout Rate: **9.85%**)\n"
-            "   - **Total Supply Chain Cost**: **$2,842.10**\n"
-            "   - **Deficiency**: Orders only expected mean, causing stockouts on ~50% of above-average demand days.\n\n"
+            "   - **Service Level**: **95.02%** (Stockout Rate: **8.77%**)\n"
+            "   - **Total Supply Chain Cost**: **$2,828.54**\n"
+            "   - **Deficiency**: Orders close to expected mean with lower safety stock (18.68 avg units), risking stockout penalties on demand spikes.\n\n"
             "> **Headline Impact**: Quantile Ordering achieves **14.89% stockout reduction** and **13.69% total cost savings** vs the Manager Heuristic."
         )
 
@@ -240,10 +240,10 @@ def answer_locally_without_api_key(user_msg: str) -> str:
     if any(k in msg_lower for k in ["why lightgbm", "tweedie", "outperform", "rolling mean", "architecture", "feature"]):
         return (
             "### 🤖 LightGBM Tweedie vs 7-Day Baseline\n\n"
-            "Our tuned **LightGBM Tweedie point model** achieves **34.91% WAPE**, outperforming the 38.10% 7-day rolling mean baseline (**6.93% relative error reduction**).\n\n"
+            "Our tuned **LightGBM Tweedie point model** achieves **35.46% WAPE**, outperforming the 38.10% 7-day rolling mean baseline (**6.93% relative error reduction**).\n\n"
             "**Key Architectural Advantages**:\n"
             "- **Tweedie Compound Distribution**: Supermarket demand contains a zero mass (non-sale days) mixed with right-skewed positive purchases. The Tweedie objective (variance power $p=1.268$) naturally models this without artificial log-transform distortions.\n"
-            "- **Zero Information Leakage**: Features strictly obey the 14-day supply horizon (lags shifted by $\ge 14$ days: $t-14, t-15, t-21, t-28, t-35$).\n"
+            "- **Zero Information Leakage**: Features strictly obey the 14-day supply horizon (lags shifted by $\\ge 14$ days: $t-14, t-15, t-21, t-28, t-35$).\n"
             "- **Exogenous Grocery Drivers**: Captures price elasticity ratios, promotional flags, SNAP food stamp disbursement schedules, cyclical calendar encodings (sine/cosine of day-of-week and month), and holiday proximity.\n"
             "- **Quantile Uncertainty Ribbons**: Simultaneously trains pinball-loss regressors at $\\tau \\in [0.50, 0.75, 0.85, 0.90, 0.95]$ with conformal residual calibration."
         )

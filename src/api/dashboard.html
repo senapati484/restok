@@ -878,10 +878,10 @@
               <polyline points="17 6 23 6 23 12"/>
             </svg>
           </div>
-          <div class="metric-value tnum" id="kpi-wape">34.91%</div>
+          <div class="metric-value tnum" id="kpi-wape">35.46%</div>
           <div class="metric-sub">
-            <span class="delta-badge delta-positive">&plusmn; 8.37%</span>
-            <span>vs 38.10% 7-day rolling mean</span>
+            <span class="delta-badge delta-positive" id="kpi-wape-delta">-6.93%</span>
+            <span id="kpi-wape-sub">vs 38.10% 7-day rolling mean</span>
           </div>
         </div>
 
@@ -1265,7 +1265,7 @@
       <div class="section-header">
         <div>
           <h2 class="section-title">Restok AI Supply Chain Copilot</h2>
-          <p class="section-desc">Grounded analytical intelligence powered by Google Gemini API (`gemini-2.5-flash`) with native tool calling.</p>
+          <p class="section-desc">Grounded analytical intelligence powered by Google Gemini API (<code>gemini-2.5-flash</code>) with native tool calling.</p>
         </div>
       </div>
 
@@ -1380,6 +1380,10 @@
         const kpiRes = await fetch('/api/kpis');
         const kpis = await kpiRes.json();
         document.getElementById('kpi-wape').innerText = `${kpis.model_wape}%`;
+        const wapeDelta = document.getElementById('kpi-wape-delta');
+        if (wapeDelta) wapeDelta.innerText = `-${kpis.wape_improvement_pct}%`;
+        const wapeSub = document.getElementById('kpi-wape-sub');
+        if (wapeSub) wapeSub.innerText = `vs ${kpis.baseline_wape}% 7-day rolling mean`;
         document.getElementById('kpi-stockout').innerText = `-${kpis.stockout_reduction_pct}%`;
         document.getElementById('kpi-cost-savings').innerText = `${kpis.cost_savings_pct}%`;
       } catch (e) { console.error('Error fetching KPIs', e); }
@@ -1434,6 +1438,13 @@
 
       // 6. Init Copilot Key UI
       updateKeyUI(!!localStorage.getItem('restok_gemini_api_key'));
+
+      // 7. Support deep-link query param ?tab=forecasts|policies|censoring|po|copilot
+      const urlParams = new URLSearchParams(window.location.search);
+      const initialTab = urlParams.get('tab');
+      if (initialTab && ['overview', 'forecasts', 'policies', 'censoring', 'po', 'copilot'].includes(initialTab)) {
+        switchTab(initialTab);
+      }
     }
 
     async function onStoreChange() {
@@ -1575,13 +1586,48 @@
     }
 
     async function loadTradeoffCurve() {
-      const res = await fetch('/api/tradeoff');
-      const data = await res.json();
+      const [tradeRes, polRes] = await Promise.all([
+        fetch('/api/tradeoff'),
+        fetch('/api/policies')
+      ]);
+      const data = await tradeRes.json();
+      const policies = await polRes.json();
 
-      const scatterData = data.map(d => ({
-        x: d.service_level_pct_mean,
-        y: d.total_cost_usd_mean,
-        policy: d.policy_name
+      const frontierData = data.map(d => ({
+        x: d.service_level_pct,
+        y: d.total_cost_usd,
+        bias: d.service_level_bias,
+        holding: d.holding_cost_usd,
+        penalty: d.stockout_penalty_usd,
+        label: `Quantile Sweep (bias=${d.service_level_bias >= 0 ? '+' : ''}${(d.service_level_bias * 100).toFixed(0)}%)`
+      }));
+
+      const policyColors = {
+        manager_heuristic: '#F59E0B',
+        point_forecast: '#EF4444',
+        quantile_ordering: '#10B981'
+      };
+      const policyNames = {
+        manager_heuristic: 'Manager Heuristic',
+        point_forecast: 'Point Forecast Policy',
+        quantile_ordering: 'Quantile Ordering (Restok)'
+      };
+
+      const policyDatasets = policies.map(p => ({
+        label: policyNames[p.Policy] || p.Policy,
+        data: [{
+          x: p.service_level_pct_mean,
+          y: p.total_cost_usd_mean,
+          label: policyNames[p.Policy] || p.Policy,
+          holding: p.holding_cost_usd_mean,
+          penalty: p.stockout_penalty_usd_mean
+        }],
+        backgroundColor: policyColors[p.Policy] || '#94A3B8',
+        borderColor: p.Policy === 'quantile_ordering' ? '#ECFDF5' : '#0E1422',
+        borderWidth: p.Policy === 'quantile_ordering' ? 2 : 1.5,
+        pointRadius: p.Policy === 'quantile_ordering' ? 9 : 7,
+        pointStyle: p.Policy === 'quantile_ordering' ? 'circle' : 'rectRot',
+        pointHoverRadius: 11
       }));
 
       const ctx = document.getElementById('chart-tradeoff').getContext('2d');
@@ -1590,18 +1636,28 @@
       tradeoffChartInst = new Chart(ctx, {
         type: 'scatter',
         data: {
-          datasets: [{
-            label: 'Policy Simulation Outcome',
-            data: scatterData,
-            backgroundColor: data.map(d => d.policy_name === 'quantile_ordering' ? '#10B981' : (d.policy_name === 'point_forecast' ? '#3B82F6' : '#94A3B8')),
-            pointRadius: 6,
-            pointHoverRadius: 8
-          }]
+          datasets: [
+            {
+              label: 'Quantile Bias Tradeoff Curve',
+              data: frontierData,
+              showLine: true,
+              borderColor: '#3B82F6',
+              backgroundColor: 'rgba(59, 130, 246, 0.75)',
+              borderWidth: 2,
+              tension: 0.25,
+              pointRadius: 5,
+              pointHoverRadius: 7
+            },
+            ...policyDatasets
+          ]
         },
         options: {
           responsive: true,
           plugins: {
-            legend: { display: false },
+            legend: {
+              display: true,
+              labels: { color: '#94A3B8', font: { family: 'IBM Plex Sans', size: 11 }, usePointStyle: true }
+            },
             tooltip: {
               backgroundColor: '#0E1422',
               borderColor: 'rgba(255, 255, 255, 0.12)',
@@ -1609,7 +1665,7 @@
               callbacks: {
                 label: function(ctx) {
                   const p = ctx.raw;
-                  return `${p.policy}: Service Level ${p.x.toFixed(2)}%, Cost $${p.y.toFixed(2)}`;
+                  return `${p.label}: Service Level ${p.x.toFixed(2)}%, Cost $${p.y.toFixed(2)} (Hold: $${p.holding.toFixed(0)}, Penalty: $${p.penalty.toFixed(0)})`;
                 }
               }
             }

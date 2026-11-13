@@ -1,4 +1,4 @@
-.PHONY: install test server pipeline docker-up docker-down clean
+.PHONY: install test server app pipeline docs docker-up docker-down clean
 
 # Virtual environment python binary
 PYTHON := .venv/bin/python
@@ -14,8 +14,14 @@ test:
 server:
 	$(UVICORN) src.api.main:app --port 8000 --reload
 
+app:
+	$(PYTHON) -m streamlit run streamlit_app.py --server.port 8501
+
 pipeline:
 	./run.sh pipeline
+
+docs:
+	$(PYTHON) -m docs.build_docs
 
 docker-up:
 	docker compose up --build
