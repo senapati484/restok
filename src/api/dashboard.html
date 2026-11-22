@@ -1954,9 +1954,9 @@
         chatConversationHistory.push({ role: 'model', content: data.reply });
 
         // Update badge dynamically
-        if (data.engine === 'gemini-2.5-flash') {
+        if (data.engine && data.engine.startsWith('gemini')) {
           const badge = document.getElementById('copilot-model-label');
-          if (badge) badge.innerText = 'Connected: Gemini 2.5 Flash';
+          if (badge) badge.innerText = `Connected: ${data.engine}`;
           const dot = document.getElementById('copilot-status-dot');
           if (dot) dot.style.background = 'var(--accent-emerald)';
         }

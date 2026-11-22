@@ -378,7 +378,10 @@ def generate_chat_response(
         return {"reply": reply, "engine": "local_fallback", "tool_calls": []}
 
     try:
-        client = genai.Client(api_key=key)
+        client = genai.Client(
+            api_key=key,
+            http_options={"api_version": "v1beta"},
+        )
 
         # Register functions as native tools
         tools = [
@@ -403,21 +406,29 @@ def generate_chat_response(
                 role = "user" if turn.get("role") == "user" else "model"
                 history_contents.append(types.Content(role=role, parts=[types.Part.from_text(text=turn.get("content", ""))]))
 
-        # Initialize chat with AFC (Automatic Function Calling)
-        chat = client.chats.create(
-            model="gemini-2.5-flash",
-            config=config,
-            history=history_contents,
-        )
+        # Try models in order of capability
+        model_candidates = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
+        last_err = None
+        for model_name in model_candidates:
+            try:
+                chat = client.chats.create(
+                    model=model_name,
+                    config=config,
+                    history=history_contents,
+                )
+                response = chat.send_message(user_message)
+                return {
+                    "reply": response.text or "Analysis completed.",
+                    "engine": model_name,
+                    "tool_calls": [],
+                }
+            except Exception as model_err:
+                last_err = model_err
+                # If error is specifically about function calling or not found, try next candidate
+                continue
 
-        # Call Gemini 2.5 Flash
-        response = chat.send_message(user_message)
-
-        return {
-            "reply": response.text or "Analysis completed.",
-            "engine": "gemini-2.5-flash",
-            "tool_calls": [],
-        }
+        if last_err:
+            raise last_err
 
     except Exception as e:
         logger.warning("Gemini API call failed (%s). Falling back to local engine.", e)
